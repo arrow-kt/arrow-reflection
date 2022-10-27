@@ -1,0 +1,6 @@
+.idea/
+.gradle/
+build/
+arrow-site/docs/apidocs
+_site
+local.properties

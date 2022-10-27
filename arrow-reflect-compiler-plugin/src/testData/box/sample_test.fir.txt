@@ -1,0 +1,28 @@
+FILE: sample_test.kt
+    package foo.bar
+
+    public final data class Sample : R|kotlin/Any| {
+        public constructor(foo: R|kotlin/Int|): R|foo/bar/Sample| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final val foo: R|kotlin/Int| = R|<local>/foo|
+            public get(): R|kotlin/Int|
+
+        public final operator fun component1(): R|kotlin/Int|
+
+        public final fun copy(foo: R|kotlin/Int| = this@R|foo/bar/Sample|.R|foo/bar/Sample.foo|): R|foo/bar/Sample|
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval sample: R|foo/bar/Sample| = R|foo/bar/Sample.Sample|(Int(42))
+        ^box when () {
+            ==(R|<local>/sample|.R|foo/bar/Sample.foo|, Int(42)) ->  {
+                String(OK)
+            }
+            else ->  {
+                String(Fail)
+            }
+        }
+
+    }
