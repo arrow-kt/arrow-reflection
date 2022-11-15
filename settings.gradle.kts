@@ -15,6 +15,13 @@ dependencyResolutionManagement {
   }
 }
 
+//sourceControl {
+//  gitRepository(uri("https://github.com/JetBrains/kotlin.git")) {
+//    rootDir = "/tree/master/compiler/fir/tree/tree-generator"
+//    producesModule("compiler:tree-generator")
+//  }
+//}
+
 include(
   ":arrow-reflect-annotations",
   ":arrow-reflect-compiler-plugin",

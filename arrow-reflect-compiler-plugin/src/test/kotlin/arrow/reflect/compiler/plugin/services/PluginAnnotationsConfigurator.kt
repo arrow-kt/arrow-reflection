@@ -28,6 +28,7 @@ class PluginAnnotationsConfigurator(testServices: TestServices) :
     val jar =
       libDir.listFiles(ANNOTATIONS_JAR_FILTER)?.firstOrNull()
         ?: testServices.assertions.fail(failMessage)
+    println("found jar: $jar")
     configuration.addJvmClasspathRoot(jar)
   }
 

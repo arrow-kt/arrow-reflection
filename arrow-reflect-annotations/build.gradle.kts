@@ -1,3 +1,10 @@
+buildscript {
+  repositories {
+    gradlePluginPortal()
+    mavenCentral()
+  }
+}
+
 plugins {
   alias(libs.plugins.kotlin.jvm)
   //  alias(libs.plugins.arrowGradleConfig.kotlin)
@@ -9,4 +16,20 @@ tasks {
   dokkaHtml { enabled = false }
   dokkaJavadoc { enabled = false }
   dokkaJekyll { enabled = false }
+}
+
+sourceSets {
+  main {
+    kotlin {
+      srcDirs(
+        "$projectDir/src/main/kotlin",
+        "$projectDir/src/main/generated"
+      )
+      include("**/*.kt")
+    }
+  }
+}
+
+dependencies {
+  compileOnly(libs.kotlin.compiler)
 }
