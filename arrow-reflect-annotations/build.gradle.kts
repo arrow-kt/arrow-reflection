@@ -18,6 +18,13 @@ tasks {
   dokkaJekyll { enabled = false }
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+  compilerOptions {
+    useK2.set(true)
+    freeCompilerArgs.set(listOf("-Xcontext-receivers"))
+  }
+}
+
 sourceSets {
   main {
     kotlin {

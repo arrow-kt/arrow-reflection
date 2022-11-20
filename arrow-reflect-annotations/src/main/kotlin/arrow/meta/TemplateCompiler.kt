@@ -1,31 +1,26 @@
-package arrow.reflect.compiler.plugin.fir
+package arrow.meta
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFileManager
 import org.jetbrains.kotlin.analyzer.common.CommonPlatformAnalyzerServices
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.backend.common.sourceElement
 import org.jetbrains.kotlin.backend.jvm.JvmIrDeserializerImpl
 import org.jetbrains.kotlin.cli.common.CLICompiler
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.CommonCompilerPerformanceManager
 import org.jetbrains.kotlin.cli.common.checkKotlinPackageUsage
 import org.jetbrains.kotlin.cli.common.fir.FirDiagnosticsCompilerResultsReporter
-import org.jetbrains.kotlin.cli.common.messages.AnalyzerWithCompilerReport
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.STRONG_WARNING
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.common.messages.*
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.modules.ModuleBuilder
 import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.cli.jvm.config.jvmClasspathRoots
 import org.jetbrains.kotlin.cli.jvm.config.jvmModularRoots
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporterFactory
 import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.fir.*
@@ -44,11 +39,9 @@ import org.jetbrains.kotlin.fir.session.FirSessionFactoryHelper
 import org.jetbrains.kotlin.fir.session.IncrementalCompilationContext
 import org.jetbrains.kotlin.fir.session.environment.AbstractProjectEnvironment
 import org.jetbrains.kotlin.fir.session.environment.AbstractProjectFileSearchScope
-import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 import org.jetbrains.kotlin.incremental.createDirectory
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmIrMangler
-import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
 import org.jetbrains.kotlin.load.kotlin.incremental.IncrementalPackagePartProvider
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.modules.Module
@@ -57,12 +50,10 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.platform.CommonPlatforms
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.platform.isCommon
-import org.jetbrains.kotlin.platform.js.isJs
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
 import org.jetbrains.kotlin.platform.jvm.isJvm
 import org.jetbrains.kotlin.platform.konan.isNative
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus
-import org.jetbrains.kotlin.psi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.resolve.PlatformDependentAnalyzerServices
@@ -87,6 +78,7 @@ class TemplateCompiler(
   disposable: Disposable,
   targetPlatform: TargetPlatform,
   private val projectConfiguration: CompilerConfiguration,
+  internal val sourceCache: MutableMap<Pair<Int, Int>, String>
 ) {
 
   private var counter = AtomicInteger(0)
@@ -96,14 +88,15 @@ class TemplateCompiler(
   private val ktPsiFactory: KtPsiFactory
   private val buildFile: File? = null
   private val chunk: List<Module>
+  val templatesFolder = File(File("."), "/build/meta/templates")
 
   init {
     val configFiles =
       when {
         targetPlatform.isJvm() -> EnvironmentConfigFiles.JVM_CONFIG_FILES
-        targetPlatform.isJs() -> EnvironmentConfigFiles.JS_CONFIG_FILES
         targetPlatform.isNative() -> EnvironmentConfigFiles.NATIVE_CONFIG_FILES
         targetPlatform.isCommon() -> EnvironmentConfigFiles.METADATA_CONFIG_FILES
+        //targetPlatform.isJs() -> EnvironmentConfigFiles.JS_CONFIG_FILES
         else -> error("Unsupported ${targetPlatform}")
       }
 
@@ -121,76 +114,32 @@ class TemplateCompiler(
 
     ktPsiFactory = KtPsiFactory(environment.project)
 
-    val templatesFolder = File(File("."), "/build/meta/templates")
     if (!templatesFolder.exists()) templatesFolder.createDirectory()
     templatesFolder.deleteOnExit()
 
-    chunk = listOf(ModuleBuilder(
-      "meta templates module",
-      templatesFolder.absolutePath, "java-production"
-    ))
+    chunk = listOfNotNull(
+      ModuleBuilder(
+        "meta templates module",
+        templatesFolder.absolutePath, "java-production"
+      )
+    )
   }
 
-  operator fun Name?.unaryPlus(): String =
-    this?.asString() ?: ""
-
-  operator fun Visibility?.unaryPlus(): String =
-    when (this) {
-      Visibilities.Public -> "public"
-      Visibilities.Private -> "private"
-      Visibilities.PrivateToThis -> "private"
-      else -> ""
+  fun addToSourceCache(element: FirElement) {
+    val text = element.psi?.text
+    val source = element.source
+    if (text != null && source != null) {
+      sourceCache[source.startOffset to source.endOffset] = text
     }
-
-  operator fun Modality?.unaryPlus(): String =
-    when (this) {
-      Modality.FINAL -> "final"
-      Modality.SEALED -> "sealed"
-      Modality.OPEN -> "open"
-      Modality.ABSTRACT -> "abstract"
-      null -> ""
-    }
-
-  operator fun IrElement.unaryPlus(): String =
-    sourceElement()?.psi?.text ?: error("$this has no source psi text element")
-
-  operator fun FirElement.unaryPlus(): String =
-    psi?.text ?: error("$this has no source psi text element")
-
-  inline fun <reified Fir: FirElement> String.frontend(): Fir {
-    val results = compileSource(this, extendedAnalysisMode = true)
-    val firFiles = results.flatMap { it.fir.files }
-    var currentElement: Fir? = null
-    firFiles.forEach { firFile ->
-      firFile.accept(object : FirVisitorVoid() {
-        override fun visitElement(element: FirElement) {
-          if (element is Fir) {
-            currentElement = element
-          } else
-            element.acceptChildren(this)
-        }
-      })
-    }
-    return currentElement ?: error("Could not find a ${Fir::class}")
   }
 
-  inline fun <reified Ir: IrElement> String.backend(): Ir {
-    val results = compileSource(this, extendedAnalysisMode = true)
-    val irModuleFragments = results.map { it.ir.irModuleFragment }
-    var currentElement: Ir? = null
-    irModuleFragments.forEach { irModuleFragment ->
-      irModuleFragment.accept(object : IrElementVisitor<Unit, Unit> {
-        override fun visitElement(element: IrElement, data: Unit) {
-          if (element is Ir) {
-            currentElement = element
-          } else
-            element.acceptChildren(this, Unit)
-        }
-      }, Unit)
-    }
-    return currentElement ?: error("Could not find a ${Ir::class}")
-  }
+  fun isInSourceCache(element: IrElement): Boolean =
+    sourceCache[element.startOffset to element.endOffset] != null
 
+
+  lateinit var existingFirSession: FirSession
+
+  @OptIn(ExperimentalCompilerApi::class)
   fun compileSource(
     source: String,
     extendedAnalysisMode: Boolean
@@ -203,13 +152,15 @@ class TemplateCompiler(
     )
 
     val notSupportedPlugins = mutableListOf<String?>().apply {
-      projectConfiguration.get(ComponentRegistrar.PLUGIN_COMPONENT_REGISTRARS).collectIncompatiblePluginNamesTo(this, ComponentRegistrar::supportsK2)
-      projectConfiguration.get(CompilerPluginRegistrar.COMPILER_PLUGIN_REGISTRARS).collectIncompatiblePluginNamesTo(this, CompilerPluginRegistrar::supportsK2)
+      projectConfiguration.get(ComponentRegistrar.PLUGIN_COMPONENT_REGISTRARS)
+        .collectIncompatiblePluginNamesTo(this, ComponentRegistrar::supportsK2)
+      projectConfiguration.get(CompilerPluginRegistrar.COMPILER_PLUGIN_REGISTRARS)
+        .collectIncompatiblePluginNamesTo(this, CompilerPluginRegistrar::supportsK2)
     }
 
     if (notSupportedPlugins.isNotEmpty()) {
       messageCollector.report(
-        CompilerMessageSeverity.ERROR,
+        ERROR,
         """
                     |There are some plugins incompatible with K2 compiler:
                     |${notSupportedPlugins.joinToString(separator = "\n|") { "  $it" }}
@@ -220,7 +171,7 @@ class TemplateCompiler(
     }
     if (projectConfiguration.languageVersionSettings.supportsFeature(LanguageFeature.MultiPlatformProjects)) {
       messageCollector.report(
-        CompilerMessageSeverity.ERROR,
+        ERROR,
         "K2 compiler does not support multi-platform projects yet, so please remove -Xuse-k2 flag"
       )
       return arrayListOf()
@@ -232,7 +183,11 @@ class TemplateCompiler(
 
     val next = counter.incrementAndGet()
     val fileName = "meta.template_$next.kt"
-    val allSources = listOf(ktPsiFactory.createPhysicalFile(fileName, source))
+    println("parsing source:\n$source")
+    val allSources = //additionalFiles.map { ktPsiFactory.createPhysicalFile(it.name, it.readText())}
+      listOfNotNull(
+        ktPsiFactory.createPhysicalFile(fileName, source)
+      )
 
     // TODO: run lowerings for all modules in the chunk, then run codegen for all modules.
     val outputs: ArrayList<TemplateResult> = arrayListOf()
@@ -242,7 +197,10 @@ class TemplateCompiler(
       val context = CompilationContext(
         module,
         module.getSourceFiles(
-          allSources, (projectEnvironment as? VfsBasedProjectEnvironment)?.localFileSystem, isMultiModuleChunk, buildFile
+          allSources,
+          (projectEnvironment as? VfsBasedProjectEnvironment)?.localFileSystem,
+          isMultiModuleChunk,
+          buildFile
         ),
         projectEnvironment,
         messageCollector,
@@ -255,7 +213,26 @@ class TemplateCompiler(
         firExtensionRegistrars = project?.let { FirExtensionRegistrar.getInstances(it) } ?: emptyList(),
         irGenerationExtensions = project?.let { IrGenerationExtension.getInstances(it) } ?: emptyList()
       )
-      val templateResult = context.compileModule() ?: return arrayListOf()
+      val result =
+        try {
+          context.compileModule()
+        } catch (e: AssertionError) {
+          //TODO this emits nothing because this message collector is not associated to the surrounding compiler error stream
+          val path = File(templatesFolder, fileName)
+          val message = e.message ?: ":0:0"
+          val lineAndColumnMatch = ":(.*\\d):(.*\\d)".toRegex().find(message)?.destructured
+          if (lineAndColumnMatch != null) {
+            val (line, column) = lineAndColumnMatch
+            messageCollector.report(
+              ERROR, message, CompilerMessageLocation.create(
+                path = path.absolutePath, line = line.toInt(), column = column.toInt(), lineContent = e.localizedMessage
+              )
+            )
+          }
+          null
+        }
+
+      val templateResult = result ?: return arrayListOf()
       outputs += templateResult
     }
 
@@ -283,7 +260,11 @@ class TemplateCompiler(
       performanceManager?.notifyAnalysisFinished()
     }
     if (firResult == null) {
-      FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(diagnosticsReporter, messageCollector, renderDiagnosticNames)
+      FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(
+        diagnosticsReporter,
+        messageCollector,
+        renderDiagnosticNames
+      )
       return null
     }
 
@@ -298,7 +279,11 @@ class TemplateCompiler(
 
     performanceManager?.notifyIRTranslationFinished()
 
-    FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(diagnosticsReporter, messageCollector, renderDiagnosticNames)
+    FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(
+      diagnosticsReporter,
+      messageCollector,
+      renderDiagnosticNames
+    )
 
     performanceManager?.notifyIRGenerationFinished()
     performanceManager?.notifyGenerationFinished()
@@ -307,7 +292,10 @@ class TemplateCompiler(
     return TemplateResult(firResult, fir2IrResult)
   }
 
-  private fun CompilationContext.runFrontend(ktFiles: List<KtFile>, diagnosticsReporter: BaseDiagnosticsCollector): FirResult? {
+  private fun CompilationContext.runFrontend(
+    ktFiles: List<KtFile>,
+    diagnosticsReporter: BaseDiagnosticsCollector,
+  ): FirResult? {
     @Suppress("NAME_SHADOWING")
     var ktFiles = ktFiles
     val syntaxErrors = ktFiles.fold(false) { errorsFound, ktFile ->
@@ -339,7 +327,7 @@ class TemplateCompiler(
       needRegisterJavaElementFinder: Boolean,
       dependenciesConfigurator: DependencyListForCliModule.Builder.() -> Unit = {}
     ): FirSession {
-      return FirSessionFactoryHelper.createSessionWithDependencies(
+      return existingFirSession ?: FirSessionFactoryHelper.createSessionWithDependencies(
         Name.identifier(name),
         platform,
         analyzerServices,
@@ -354,6 +342,8 @@ class TemplateCompiler(
         firExtensionRegistrars,
         needRegisterJavaElementFinder,
         dependenciesConfigurator = {
+          //sourceDependsOnDependencies(listOfNotNull(existingFirSession.moduleData))
+          sourceDependencies(listOfNotNull(existingFirSession.moduleData))
           dependencies(moduleConfiguration.jvmClasspathRoots.map { it.toPath() })
           dependencies(moduleConfiguration.jvmModularRoots.map { it.toPath() })
           friendDependencies(moduleConfiguration[JVMConfigurationKeys.FRIEND_PATHS] ?: emptyList())
@@ -397,6 +387,8 @@ class TemplateCompiler(
     val commonRawFir = commonSession?.buildFirFromKtFiles(commonKtFiles)
     val rawFir = session.buildFirFromKtFiles(ktFiles)
 
+    // TODO we may want to tweak this parts so it doesn't run all checks in fir and macros are more lenient
+    // in terms of their scope
     commonSession?.apply {
       val (commonScopeSession, commonFir) = runResolution(commonRawFir!!)
       runCheckers(commonScopeSession, commonFir, diagnosticsReporter)
@@ -405,7 +397,9 @@ class TemplateCompiler(
     val (scopeSession, fir) = session.runResolution(rawFir)
     session.runCheckers(scopeSession, fir, diagnosticsReporter)
 
-    return if (syntaxErrors || diagnosticsReporter.hasErrors) null else FirResult(session, scopeSession, fir)
+    // TODO()  better handle scopes, we don't want to do a full analysis just FirRaw conversion
+    // return if (syntaxErrors || diagnosticsReporter.hasErrors) null else FirResult(session, scopeSession, fir)
+    return if (syntaxErrors) null else FirResult(session, scopeSession, fir)
   }
 
   private fun CompilationContext.createComponentsForIncrementalCompilation(

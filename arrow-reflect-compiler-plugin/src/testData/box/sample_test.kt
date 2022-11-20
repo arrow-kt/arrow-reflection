@@ -1,9 +1,10 @@
 package foo.bar
 
-data class Sample(val foo: Int)
+import arrow.meta.samples.Increment
 
 fun box(): String {
-  return if (true) {
+  val x = @Increment 0
+  return if (x == 1) {
     "OK"
   } else {
     "Fail"
