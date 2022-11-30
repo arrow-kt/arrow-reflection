@@ -1,9 +1,12 @@
 package test
 
 import arrow.meta.samples.Product
+import arrow.meta.FromTemplate
 
-@Product
-data class Sample(val foo: Int, val bar: String)
+data class Sample(val foo: Int, val bar: String) {
+  fun product(): List<Pair<String, *>> =
+    listOf("foo" to this.foo, "bar" to this.bar)
+}
 
 fun box(): String {
   val x = Sample(foo = 0, bar = "abc").product()

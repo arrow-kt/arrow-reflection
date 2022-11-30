@@ -1,17 +1,23 @@
 package arrow.reflect.compiler.plugin.ir
 
+import arrow.meta.FromTemplate
 import arrow.meta.TemplateCompiler
 import arrow.meta.module.impl.arrow.meta.IrMetaContext
 import arrow.reflect.compiler.plugin.targets.MetaTarget
 import arrow.reflect.compiler.plugin.targets.MetagenerationTarget
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.jvm.ir.getValueArgument
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
+import org.jetbrains.kotlin.ir.util.isAnnotationWithEqualFqName
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformer
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 class IrMetaExtensionRegistrar(
   private val templateCompiler: TemplateCompiler,
@@ -19,15 +25,38 @@ class IrMetaExtensionRegistrar(
 ) :
   IrGenerationExtension {
 
+  val fromTemplateFqName = FqName(FromTemplate::class.java.canonicalName)
+
   fun IrElement.isMetaAnnotated(templateCompiler: TemplateCompiler): Boolean =
     templateCompiler.isInSourceCache(this)
 
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+
+    moduleFragment.transform(object : IrElementTransformer<Unit> {
+
+      override fun visitCall(expression: IrCall, data: Unit): IrElement {
+        val declaration = expression.symbol.owner
+        val fromTemplateAnnotation = fromTemplateAnnotation(declaration)
+        if (fromTemplateAnnotation != null) {
+          val parentClassIdConst = fromTemplateAnnotation.getValueArgument(Name.identifier("parent")) as? IrConst<*>
+          val parent = parentClassIdConst?.value as? String
+          if (parent != null) {
+            val foundParent = pluginContext.referenceClass(ClassId.fromString(parent))
+            if (foundParent != null) {
+              declaration.parent = foundParent.owner
+            }
+          }
+        }
+        return super.visitCall(expression, data)
+      }
+
+    }, Unit)
+
     moduleFragment.transform(object : IrElementTransformer<Unit> {
 
       private inline fun <reified In : IrElement, reified Out : IrElement> invokeMeta(arg: In): Out? =
         if (arg.isMetaAnnotated(templateCompiler)) {
-          MetaTarget.find("transform", MetagenerationTarget.Ir, listOf(In::class), Out::class, metaTargets)?.let { target ->
+          MetaTarget.find("transform", null, MetagenerationTarget.Ir, listOf(In::class), Out::class, metaTargets)?.let { target ->
             val metaContext = IrMetaContext(templateCompiler, pluginContext)
             val result = target.method.invoke(target.companion.objectInstance, metaContext, arg)
             result as? Out
@@ -292,6 +321,9 @@ class IrMetaExtensionRegistrar(
     }, Unit)
     println(moduleFragment.dumpKotlinLike())
   }
+
+  private fun fromTemplateAnnotation(declaration: IrSimpleFunction): IrConstructorCall? =
+    declaration.annotations.firstOrNull { it.isAnnotationWithEqualFqName(fromTemplateFqName) }
 
 }
 

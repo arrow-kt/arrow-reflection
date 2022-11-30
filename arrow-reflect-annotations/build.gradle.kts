@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 buildscript {
   repositories {
     gradlePluginPortal()
@@ -18,12 +20,19 @@ tasks {
   dokkaJekyll { enabled = false }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+tasks.withType<KotlinCompile>().configureEach {
   compilerOptions {
     useK2.set(true)
     freeCompilerArgs.set(listOf("-Xcontext-receivers"))
   }
 }
+
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of(8)) // "8"
+  }
+}
+
 
 sourceSets {
   main {

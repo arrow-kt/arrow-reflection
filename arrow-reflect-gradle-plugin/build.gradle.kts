@@ -74,3 +74,9 @@ fun generateArrowReflectVersionFile() {
 
   kotlin.sourceSets.map { it.kotlin.srcDirs(generatedDir) }
 }
+
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of(8)) // "8"
+  }
+}

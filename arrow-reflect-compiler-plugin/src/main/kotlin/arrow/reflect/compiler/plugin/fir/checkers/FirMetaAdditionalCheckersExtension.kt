@@ -25,15 +25,16 @@ class FirMetaAdditionalCheckersExtension(
   val templateCompiler: TemplateCompiler,
   val metaTargets: List<MetaTarget>
 ) : FirAdditionalCheckersExtension(session) {
+
   override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
     override val basicDeclarationCheckers: Set<FirBasicDeclarationChecker> = setOf(
-    object : FirBasicDeclarationChecker() {
-      override fun check(declaration: FirDeclaration, context: CheckerContext, reporter: DiagnosticReporter) {
-        if (declaration.isMetaAnnotated(session)) {
-          templateCompiler.addToSourceCache(declaration)
+      object : FirBasicDeclarationChecker() {
+        override fun check(declaration: FirDeclaration, context: CheckerContext, reporter: DiagnosticReporter) {
+          if (declaration.isMetaAnnotated(session)) {
+            templateCompiler.addToSourceCache(declaration)
+          }
         }
       }
-    }
     )
   }
   override val expressionCheckers: ExpressionCheckers = object : ExpressionCheckers() {

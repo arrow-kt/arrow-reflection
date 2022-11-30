@@ -20,3 +20,9 @@ dependencies {
   implementation(project(":arrow-reflect-annotations"))
 //  implementation("io.arrow-kt:arrow-reflect-annotations:0.1.0")
 }
+
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of(8)) // "8"
+  }
+}

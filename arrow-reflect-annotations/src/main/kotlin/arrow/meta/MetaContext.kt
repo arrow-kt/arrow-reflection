@@ -6,17 +6,13 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.fir.*
-import org.jetbrains.kotlin.fir.declarations.FirClass
-import org.jetbrains.kotlin.fir.declarations.FirDeclaration
-import org.jetbrains.kotlin.fir.declarations.FirFile
-import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
+import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.FirCall
+import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
@@ -63,28 +59,25 @@ class FirMetaContext(
 
   val synthetic = """TODO("synthetic body must be filled in IR Transformation")"""
 
-  val String.function: FirSimpleFunction
-    get() = frontend()
-
-  @PublishedApi
-  internal val updates: MutableList<() -> Unit> = arrayListOf()
-
-  fun FirClass.add(declaration: FirDeclaration): FirClass {
-    updates.add {
-      val decs = declarations
-      decs as MutableList<FirDeclaration>
-      decs.add(declaration)
-      println(+declaration)
+  @OptIn(SymbolInternals::class)
+  fun FirMetaContext.properties(firClass: FirClass, f: (FirValueParameter) -> String): String =
+    +firClass.primaryConstructorIfAny(session)?.fir?.valueParameters.orEmpty().filter { it.isVal }.map {
+      f(it)
     }
-    return this
+
+  fun String.functionIn(firClass: FirClass): FirSimpleFunction {
+    val results = templateCompiler.compileSource(this, extendedAnalysisMode = false, firClass)
+    val firFiles = results.firResults.flatMap { it.files }
+    val currentElement: FirSimpleFunction? = findSelectedFirElement(FirSimpleFunction::class, firFiles)
+    return currentElement ?: error("Could not find a ${FirSimpleFunction::class}")
   }
 
   operator fun FirElement.unaryPlus(): String =
     psi?.text ?: error("$this has no source psi text element")
 
   inline fun <reified Fir : FirElement> String.frontend(): Fir {
-    val results = templateCompiler.compileSource(this, extendedAnalysisMode = false)
-    val firFiles = results.flatMap { it.fir.files }
+    val results = templateCompiler.compileSource(this, extendedAnalysisMode = false, null)
+    val firFiles = results.firResults.flatMap { it.files }
     val currentElement: Fir? = findSelectedFirElement(Fir::class, firFiles)
     return currentElement ?: error("Could not find a ${Fir::class}")
   }
@@ -125,25 +118,16 @@ class IrMetaContext(
   val irPluginContext: IrPluginContext
 ) : MetaContext(templateCompiler) {
 
-  fun String.replaceMember(irClass: IrClass): IrClass {
-    val results = templateCompiler.compileSource(this, extendedAnalysisMode = true)
-    val irModuleFragments = results.map { it.ir.irModuleFragment }
-    val replacementFunction: IrSimpleFunction? = findSelectedIrElement(IrSimpleFunction::class, irModuleFragments)
-    if (replacementFunction != null) {
-      val fn = irClass.getSimpleFunction(replacementFunction.name.asString())?.owner
-      fn?.body = replacementFunction.body
-    }
-    return irClass
-  }
 
-  val String.expressionBody: IrExpressionBody get() =
-    IrExpressionBodyImpl(
-      UNDEFINED_OFFSET, UNDEFINED_OFFSET, backend<IrExpression>()
-    )
+  val String.expressionBody: IrExpressionBody
+    get() =
+      IrExpressionBodyImpl(
+        UNDEFINED_OFFSET, UNDEFINED_OFFSET, backend<IrExpression>()
+      )
 
   inline fun <reified Ir : IrElement> String.backend(): Ir {
-    val results = templateCompiler.compileSource(this, extendedAnalysisMode = true)
-    val irModuleFragments = results.map { it.ir.irModuleFragment }
+    val results = templateCompiler.compileSource(this, extendedAnalysisMode = true, null, produceIr = true)
+    val irModuleFragments = results.irResults.map { it.irModuleFragment }
     val currentElement: Ir? = findSelectedIrElement(Ir::class, irModuleFragments)
     return currentElement ?: error("Could not find a ${Ir::class}")
   }

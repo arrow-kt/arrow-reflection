@@ -11,10 +11,12 @@ class FirArrowReflectExtensionRegistrar(val templateCompiler: TemplateCompiler, 
 
   override fun ExtensionRegistrarContext.configurePlugin() {
     +{ session: FirSession ->
-      templateCompiler.existingFirSession = session
-      FirMetaCodegenExtension(session, templateCompiler, metaTargets) }
+      templateCompiler.session = session
+      FirMetaCodegenExtension(session, templateCompiler, metaTargets)
+    }
     +{ session: FirSession ->
-      templateCompiler.existingFirSession = session
-      FirMetaAdditionalCheckersExtension(session, templateCompiler, metaTargets) }
+      templateCompiler.session = session
+      FirMetaAdditionalCheckersExtension(session, templateCompiler, metaTargets)
+    }
   }
 }

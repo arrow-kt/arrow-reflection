@@ -26,7 +26,7 @@ internal object ClasspathMetaScanner {
     val targets = classesAndCompanions.flatMap { (klass, companion) ->
       companion.declaredMethods.map {
         val target =
-          if (it.returnType.packageName.startsWith(IrElement::class.java.packageName))
+          if (it.returnType.`package`.name.startsWith(IrElement::class.java.`package`.name))
             MetagenerationTarget.Ir
           else
             MetagenerationTarget.Fir

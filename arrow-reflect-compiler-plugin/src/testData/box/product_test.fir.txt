@@ -1,0 +1,37 @@
+FILE: product_test.kt
+    package test
+
+    @R|arrow/meta/samples/Product|() public final data class Sample : R|kotlin/Any| {
+        public constructor(foo: R|kotlin/Int|, bar: R|kotlin/String|): R|test/Sample| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final val foo: R|kotlin/Int| = R|<local>/foo|
+            public get(): R|kotlin/Int|
+
+        public final val bar: R|kotlin/String| = R|<local>/bar|
+            public get(): R|kotlin/String|
+
+        public final operator fun component1(): R|kotlin/Int|
+
+        public final operator fun component2(): R|kotlin/String|
+
+        public final fun copy(foo: R|kotlin/Int| = this@R|test/Sample|.R|test/Sample.foo|, bar: R|kotlin/String| = this@R|test/Sample|.R|test/Sample.bar|): R|test/Sample|
+
+        @R|arrow/meta/FromTemplate|(parent = String(test/Sample)) public final fun product(): R|kotlin/collections/List<kotlin/Pair<kotlin/String, *>>| {
+            ^product R|kotlin/collections/listOf|<R|kotlin/Pair<kotlin/String, it(kotlin/Comparable<*> & java/io/Serializable)>|>(vararg(String(foo).R|kotlin/to|<R|kotlin/String|, R|kotlin/Int|>(this@R|test/Sample|.R|test/Sample.foo|), String(bar).R|kotlin/to|<R|kotlin/String|, R|kotlin/String|>(this@R|test/Sample|.R|test/Sample.bar|)))
+        }
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval x: R|kotlin/collections/List<kotlin/Pair<kotlin/String, *>>| = R|test/Sample.Sample|(foo = Int(0), bar = String(abc)).R|test/Sample.product|()
+        ^box when () {
+            ==(R|<local>/x|, R|kotlin/collections/listOf|<R|kotlin/Pair<kotlin/String, it(kotlin/Comparable<*> & java/io/Serializable)>|>(vararg(String(foo).R|kotlin/to|<R|kotlin/String|, R|kotlin/Int|>(Int(0)), String(bar).R|kotlin/to|<R|kotlin/String|, R|kotlin/String|>(String(abc))))) ->  {
+                String(OK)
+            }
+            else ->  {
+                String(Fail)
+            }
+        }
+
+    }
