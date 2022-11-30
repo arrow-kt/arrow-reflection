@@ -2,6 +2,8 @@ package arrow.meta.module.impl.arrow.meta
 
 import arrow.meta.TemplateCompiler
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
+import org.jetbrains.kotlin.cli.common.messages.MessageUtil
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
@@ -59,8 +61,11 @@ class FirMetaContext(
 
   val synthetic = """TODO("synthetic body must be filled in IR Transformation")"""
 
+  val FirElement.location: CompilerMessageSourceLocation?
+    get() = psi?.let { MessageUtil.psiElementToMessageLocation(it) }
+
   @OptIn(SymbolInternals::class)
-  fun FirMetaContext.properties(firClass: FirClass, f: (FirValueParameter) -> String): String =
+  fun propertiesOf(firClass: FirClass, f: (FirValueParameter) -> String): String =
     +firClass.primaryConstructorIfAny(session)?.fir?.valueParameters.orEmpty().filter { it.isVal }.map {
       f(it)
     }

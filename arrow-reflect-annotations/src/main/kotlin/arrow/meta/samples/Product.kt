@@ -16,7 +16,7 @@ annotation class Product {
           //language=kotlin
           """|
              |fun product(): List<Pair<String, *>> = 
-             |  listOf(${properties(firClass) { """"${+it.name}" to this.${+it.name}""" }})
+             |  listOf(${propertiesOf(firClass) { """"${+it.name}" to this.${+it.name}""" }})
           """.trimMargin()
         }
       )

@@ -27,7 +27,7 @@ annotation class Meta {
     }
 
     interface Expression<E : FirExpression> : Checker<E> {
-      fun check(expression: E, context: CheckerContext, reporter: DiagnosticReporter)
+      fun FirMetaContext.check(expression: E, context: CheckerContext, reporter: DiagnosticReporter)
     }
 
     interface Type<E : FirTypeRef> : Checker<E> {

@@ -1,0 +1,5 @@
+FILE: log_test.kt
+    package foo.bar
+
+    public final val x: R|kotlin/Int| = @R|arrow/meta/samples/Log|() Int(0)
+        public get(): R|kotlin/Int|

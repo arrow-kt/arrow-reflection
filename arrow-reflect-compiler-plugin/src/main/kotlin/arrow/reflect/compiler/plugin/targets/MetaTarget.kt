@@ -17,6 +17,7 @@ data class MetaTarget(
 
   companion object {
     fun find(
+      annotations : Set<String>,
       methodName: String,
       supertype: KClass<*>?,
       target: MetagenerationTarget,
@@ -25,6 +26,7 @@ data class MetaTarget(
       targets: List<MetaTarget>
     ): MetaTarget? =
       targets.find {
+        (annotations.isEmpty() || it.annotation.java.canonicalName in annotations) &&
         (supertype == null || it.companion.allSuperclasses.any {
           it == supertype
         }) &&
@@ -32,7 +34,15 @@ data class MetaTarget(
           it.target == target &&
           (it.args == listOf(FirMetaContext::class) + args ||
             it.args == listOf(IrMetaContext::class) + args) &&
-          it.returnType == returnType
+          toKotlin(it.returnType) == returnType
+      }
+
+    private fun toKotlin(klass: KClass<*>): KClass<*> =
+      when (klass) {
+        Void::class -> Unit::class
+        else -> klass
       }
   }
+
+
 }

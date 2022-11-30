@@ -1,9 +1,9 @@
 package arrow.reflect.compiler.plugin.targets
 
 import arrow.meta.module.Module
+import arrow.meta.module.impl.arrow.meta.IrMetaContext
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfoList
-import org.jetbrains.kotlin.ir.IrElement
 
 internal object ClasspathMetaScanner {
   internal fun classPathMetaTargets(): List<MetaTarget> {
@@ -26,7 +26,7 @@ internal object ClasspathMetaScanner {
     val targets = classesAndCompanions.flatMap { (klass, companion) ->
       companion.declaredMethods.map {
         val target =
-          if (it.returnType.`package`.name.startsWith(IrElement::class.java.`package`.name))
+          if (it.parameters.firstOrNull()?.type == IrMetaContext::class.java)
             MetagenerationTarget.Ir
           else
             MetagenerationTarget.Fir

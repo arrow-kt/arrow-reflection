@@ -56,7 +56,9 @@ class IrMetaExtensionRegistrar(
 
       private inline fun <reified In : IrElement, reified Out : IrElement> invokeMeta(arg: In): Out? =
         if (arg.isMetaAnnotated(templateCompiler)) {
-          MetaTarget.find("transform", null, MetagenerationTarget.Ir, listOf(In::class), Out::class, metaTargets)?.let { target ->
+          MetaTarget.find(
+            emptySet(),
+            "transform", null, MetagenerationTarget.Ir, listOf(In::class), Out::class, metaTargets)?.let { target ->
             val metaContext = IrMetaContext(templateCompiler, pluginContext)
             val result = target.method.invoke(target.companion.objectInstance, metaContext, arg)
             result as? Out
