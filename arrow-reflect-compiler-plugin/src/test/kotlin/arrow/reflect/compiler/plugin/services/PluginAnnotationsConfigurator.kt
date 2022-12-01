@@ -15,7 +15,10 @@ class PluginAnnotationsConfigurator(testServices: TestServices) :
   companion object {
     private const val ANNOTATIONS_JAR_DIR = "../arrow-reflect-annotations/build/libs/"
     private val ANNOTATIONS_JAR_FILTER = FilenameFilter { _, name ->
-      name.startsWith("arrow-reflect-annotations") && name.endsWith(".jar")
+      name.startsWith("arrow-reflect-annotations") &&
+        name.endsWith(".jar") &&
+        !name.endsWith("-javadoc.jar") &&
+        !name.endsWith("-sources.jar")
     }
   }
 

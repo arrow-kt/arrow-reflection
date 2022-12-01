@@ -10,16 +10,18 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
 import org.jetbrains.kotlin.platform.CommonPlatforms
 
-
-class ArrowReflectComponentRegistrar : CompilerPluginRegistrar() {
+class ArrowReflectCompilerPluginRegistrar : CompilerPluginRegistrar() {
 
   override val supportsK2: Boolean = true
 
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    val sourceCache :MutableMap<Pair<Int, Int>, String> = mutableMapOf()
-    val templateCompiler = TemplateCompiler({  }, CommonPlatforms.defaultCommonPlatform, configuration, sourceCache)
+    val sourceCache: MutableMap<Pair<Int, Int>, String> = mutableMapOf()
+    val templateCompiler =
+      TemplateCompiler({}, CommonPlatforms.defaultCommonPlatform, configuration, sourceCache)
     val metaTargets = ClasspathMetaScanner.classPathMetaTargets()
-    FirExtensionRegistrarAdapter.registerExtension(FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets))
+    FirExtensionRegistrarAdapter.registerExtension(
+      FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets)
+    )
     IrGenerationExtension.registerExtension(IrMetaExtensionRegistrar(templateCompiler, metaTargets))
   }
 }
