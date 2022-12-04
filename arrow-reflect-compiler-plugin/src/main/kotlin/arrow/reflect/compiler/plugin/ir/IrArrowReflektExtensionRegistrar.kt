@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.isAnnotationWithEqualFqName
+import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformer
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -27,8 +28,10 @@ class IrMetaExtensionRegistrar(
 
   val fromTemplateFqName = FqName(FromTemplate::class.java.canonicalName)
 
-  fun IrElement.isMetaAnnotated(templateCompiler: TemplateCompiler): Boolean =
-    templateCompiler.isInSourceCache(this)
+  fun IrElement.isMetaAnnotated(file: IrFile?, templateCompiler: TemplateCompiler): Boolean {
+    val sourceScope = templateCompiler.frontEndScopeCache.getScope(file, this)
+    return sourceScope?.metaAnnotations?.isNotEmpty() == true
+  }
 
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
 
@@ -54,25 +57,47 @@ class IrMetaExtensionRegistrar(
 
     moduleFragment.transform(object : IrElementTransformer<Unit> {
 
-      private inline fun <reified In : IrElement, reified Out : IrElement> invokeMeta(arg: In): Out? =
-        if (arg.isMetaAnnotated(templateCompiler)) {
+      var currentFile: IrFile? = null
+      var currentDeclarationParent: IrDeclarationParent? = null
+
+      private inline fun <reified In : IrElement, reified Out : IrElement> invokeMeta(arg: In): Out? {
+        val file = currentFile
+        //currentDeclarationParent = currentFile
+        return if (file != null && (arg.isMetaAnnotated(
+            file,
+            templateCompiler
+          ) || (arg is IrMemberAccessExpression<*> && arg.symbol.owner.isMetaAnnotated(currentFile, templateCompiler)))
+        ) {
           MetaTarget.find(
             emptySet(),
-            "transform", null, MetagenerationTarget.Ir, listOf(In::class), Out::class, metaTargets)?.let { target ->
-            val metaContext = IrMetaContext(templateCompiler, pluginContext)
+            "transform", null, MetagenerationTarget.Ir, listOf(In::class), Out::class, metaTargets
+          )?.let { target ->
+            val metaContext = IrMetaContext(templateCompiler, pluginContext, file)
             val result = target.method.invoke(target.companion.objectInstance, metaContext, arg)
+            val parent = currentDeclarationParent
+            if (parent != null && result is IrElement) {
+              result.patchDeclarationParents(parent)
+//              if (result is IrCall) {
+//                result.symbol.owner.parent = parent
+//              }
+            }
+
             result as? Out
           }
         } else null
+      }
 
-      override fun visitAnonymousInitializer(declaration: IrAnonymousInitializer, data: Unit): IrStatement =
-        invokeMeta(declaration) ?: super.visitAnonymousInitializer(declaration, data)
+      override fun visitAnonymousInitializer(declaration: IrAnonymousInitializer, data: Unit): IrStatement {
+        return invokeMeta(declaration) ?: super.visitAnonymousInitializer(declaration, data)
+      }
 
-      override fun visitBlock(expression: IrBlock, data: Unit): IrExpression =
-        invokeMeta(expression) ?: super.visitBlock(expression, data)
+      override fun visitBlock(expression: IrBlock, data: Unit): IrExpression {
+        return invokeMeta(expression) ?: super.visitBlock(expression, data)
+      }
 
-      override fun visitBlockBody(body: IrBlockBody, data: Unit): IrBody =
-        invokeMeta(body) ?: super.visitBlockBody(body, data)
+      override fun visitBlockBody(body: IrBlockBody, data: Unit): IrBody {
+        return invokeMeta(body) ?: super.visitBlockBody(body, data)
+      }
 
       override fun visitBody(body: IrBody, data: Unit): IrBody =
         invokeMeta(body) ?: super.visitBody(body, data)
@@ -95,8 +120,10 @@ class IrMetaExtensionRegistrar(
       override fun visitCatch(aCatch: IrCatch, data: Unit): IrCatch =
         invokeMeta(aCatch) ?: super.visitCatch(aCatch, data)
 
-      override fun visitClass(declaration: IrClass, data: Unit): IrStatement =
-        invokeMeta(declaration) ?: super.visitClass(declaration, data)
+      override fun visitClass(declaration: IrClass, data: Unit): IrStatement {
+        currentDeclarationParent = declaration
+        return invokeMeta(declaration) ?: super.visitClass(declaration, data)
+      }
 
       override fun visitClassReference(expression: IrClassReference, data: Unit): IrExpression =
         invokeMeta(expression) ?: super.visitClassReference(expression, data)
@@ -119,11 +146,14 @@ class IrMetaExtensionRegistrar(
       override fun visitConstantValue(expression: IrConstantValue, data: Unit): IrConstantValue =
         invokeMeta(expression) ?: super.visitConstantValue(expression, data)
 
-      override fun visitConstructor(declaration: IrConstructor, data: Unit): IrStatement =
-        invokeMeta(declaration) ?: super.visitConstructor(declaration, data)
+      override fun visitConstructor(declaration: IrConstructor, data: Unit): IrStatement {
+        currentDeclarationParent = declaration
+        return invokeMeta(declaration) ?: super.visitConstructor(declaration, data)
+      }
 
-      override fun visitConstructorCall(expression: IrConstructorCall, data: Unit): IrElement =
-        invokeMeta(expression) ?: super.visitConstructorCall(expression, data)
+      override fun visitConstructorCall(expression: IrConstructorCall, data: Unit): IrElement {
+        return invokeMeta(expression) ?: super.visitConstructorCall(expression, data)
+      }
 
       override fun visitContainerExpression(expression: IrContainerExpression, data: Unit): IrExpression =
         invokeMeta(expression) ?: super.visitContainerExpression(expression, data)
@@ -131,8 +161,9 @@ class IrMetaExtensionRegistrar(
       override fun visitContinue(jump: IrContinue, data: Unit): IrExpression =
         invokeMeta(jump) ?: super.visitContinue(jump, data)
 
-      override fun visitDeclaration(declaration: IrDeclarationBase, data: Unit): IrStatement =
-        invokeMeta(declaration) ?: super.visitDeclaration(declaration, data)
+      override fun visitDeclaration(declaration: IrDeclarationBase, data: Unit): IrStatement {
+        return invokeMeta(declaration) ?: super.visitDeclaration(declaration, data)
+      }
 
       override fun visitDeclarationReference(expression: IrDeclarationReference, data: Unit): IrExpression =
         invokeMeta(expression) ?: super.visitDeclarationReference(expression, data)
@@ -192,8 +223,10 @@ class IrMetaExtensionRegistrar(
       override fun visitFieldAccess(expression: IrFieldAccessExpression, data: Unit): IrExpression =
         invokeMeta(expression) ?: super.visitFieldAccess(expression, data)
 
-      override fun visitFile(declaration: IrFile, data: Unit): IrFile =
-        invokeMeta(declaration) ?: super.visitFile(declaration, data)
+      override fun visitFile(declaration: IrFile, data: Unit): IrFile {
+        currentFile = declaration
+        return invokeMeta(declaration) ?: super.visitFile(declaration, data)
+      }
 
       override fun visitFunction(declaration: IrFunction, data: Unit): IrStatement =
         invokeMeta(declaration) ?: super.visitFunction(declaration, data)
@@ -267,8 +300,10 @@ class IrMetaExtensionRegistrar(
       override fun visitSetValue(expression: IrSetValue, data: Unit): IrExpression =
         invokeMeta(expression) ?: super.visitSetValue(expression, data)
 
-      override fun visitSimpleFunction(declaration: IrSimpleFunction, data: Unit): IrStatement =
-        invokeMeta(declaration) ?: super.visitSimpleFunction(declaration, data)
+      override fun visitSimpleFunction(declaration: IrSimpleFunction, data: Unit): IrStatement {
+        currentDeclarationParent = declaration
+        return invokeMeta(declaration) ?: super.visitSimpleFunction(declaration, data)
+      }
 
       override fun visitSingletonReference(expression: IrGetSingletonValue, data: Unit): IrExpression =
         invokeMeta(expression) ?: super.visitSingletonReference(expression, data)

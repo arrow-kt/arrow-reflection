@@ -1,5 +1,6 @@
 package arrow.reflect.compiler.plugin.services
 
+import arrow.meta.FrontendScopeCache
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.FirArrowReflectExtensionRegistrar
 import arrow.reflect.compiler.plugin.ir.IrMetaExtensionRegistrar
@@ -21,8 +22,8 @@ class ExtensionRegistrarConfigurator(
     configuration: CompilerConfiguration
   ) {
     val metaTargets = ClasspathMetaScanner.classPathMetaTargets()
-    val sourceCache :MutableMap<Pair<Int, Int>, String> = mutableMapOf()
-    val templateCompiler = TemplateCompiler(TestDisposable(), module.targetPlatform, configuration, sourceCache)
+    val frontendScopeCache : FrontendScopeCache = FrontendScopeCache()
+    val templateCompiler = TemplateCompiler(TestDisposable(), module.targetPlatform, configuration, frontendScopeCache)
     FirExtensionRegistrarAdapter.registerExtension(FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets))
     IrGenerationExtension.registerExtension(IrMetaExtensionRegistrar(templateCompiler, metaTargets))
   }

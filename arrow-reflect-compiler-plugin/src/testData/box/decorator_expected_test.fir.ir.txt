@@ -1,0 +1,39 @@
+FILE fqName:foo.bar fileName:/decorator_expected_test.kt
+  FUN name:foo visibility:public modality:FINAL <> (value:kotlin.Int) returnType:kotlin.Int
+    VALUE_PARAMETER name:value index:0 type:kotlin.Int
+    BLOCK_BODY
+      RETURN type=kotlin.Nothing from='public final fun foo (value: kotlin.Int): kotlin.Int declared in foo.bar'
+        CALL 'public final fun plus (other: kotlin.Int): kotlin.Int [operator] declared in kotlin.Int' type=kotlin.Int origin=PLUS
+          $this: GET_VAR 'value: kotlin.Int declared in foo.bar.foo' type=kotlin.Int origin=null
+          other: CONST Int type=kotlin.Int value=41
+  FUN name:box visibility:public modality:FINAL <> () returnType:kotlin.String
+    BLOCK_BODY
+      VAR name:x type:kotlin.Int [val]
+        CALL 'public final fun decorate <In, Out> (args: kotlin.collections.List<In of arrow.meta.samples.Decorator.Companion.decorate>, func: kotlin.Function1<kotlin.collections.List<In of arrow.meta.samples.Decorator.Companion.decorate>, Out of arrow.meta.samples.Decorator.Companion.decorate>): Out of arrow.meta.samples.Decorator.Companion.decorate declared in arrow.meta.samples.Decorator.Companion' type=kotlin.Int origin=null
+          <In>: kotlin.Any?
+          <Out>: kotlin.Int
+          $this: GET_OBJECT 'CLASS IR_EXTERNAL_DECLARATION_STUB OBJECT name:Companion modality:FINAL visibility:public [companion] superTypes:[arrow.meta.Meta.Checker.Declaration<org.jetbrains.kotlin.fir.declarations.FirDeclaration>]' type=arrow.meta.samples.Decorator.Companion
+          args: CALL 'public final fun listOf <T> (element: T of kotlin.collections.CollectionsKt.listOf): kotlin.collections.List<T of kotlin.collections.CollectionsKt.listOf> declared in kotlin.collections.CollectionsKt' type=kotlin.collections.List<kotlin.Int> origin=null
+            <T>: kotlin.Int
+            element: CONST Int type=kotlin.Int value=0
+          func: FUN_EXPR type=kotlin.Function1<kotlin.collections.List<kotlin.Any?>, kotlin.Int> origin=LAMBDA
+            FUN LOCAL_FUNCTION_FOR_LAMBDA name:<anonymous> visibility:local modality:FINAL <> (args:kotlin.collections.List<kotlin.Any?>) returnType:kotlin.Int
+              VALUE_PARAMETER name:args index:0 type:kotlin.collections.List<kotlin.Any?>
+              BLOCK_BODY
+                RETURN type=kotlin.Nothing from='local final fun <anonymous> (args: kotlin.collections.List<kotlin.Any?>): kotlin.Int declared in foo.bar.box'
+                  CALL 'public final fun foo (value: kotlin.Int): kotlin.Int declared in foo.bar' type=kotlin.Int origin=null
+                    value: TYPE_OP type=kotlin.Int origin=CAST typeOperand=kotlin.Int
+                      CALL 'public abstract fun get (index: kotlin.Int): E of kotlin.collections.List [operator] declared in kotlin.collections.List' type=kotlin.Any? origin=null
+                        $this: GET_VAR 'args: kotlin.collections.List<kotlin.Any?> declared in foo.bar.box.<anonymous>' type=kotlin.collections.List<kotlin.Any?> origin=null
+                        index: CONST Int type=kotlin.Int value=0
+      RETURN type=kotlin.Nothing from='public final fun box (): kotlin.String declared in foo.bar'
+        WHEN type=kotlin.String origin=IF
+          BRANCH
+            if: CALL 'public final fun EQEQ (arg0: kotlin.Any?, arg1: kotlin.Any?): kotlin.Boolean declared in kotlin.internal.ir' type=kotlin.Boolean origin=EQEQ
+              arg0: GET_VAR 'val x: kotlin.Int [val] declared in foo.bar.box' type=kotlin.Int origin=null
+              arg1: CONST Int type=kotlin.Int value=42
+            then: CONST String type=kotlin.String value="OK"
+          BRANCH
+            if: CONST Boolean type=kotlin.Boolean value=true
+            then: CONST String type=kotlin.String value="Fail"
+FILE fqName:foo.bar.some.additional.files fileName:/SomeFile.kt

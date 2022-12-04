@@ -5,7 +5,7 @@ import arrow.meta.module.impl.arrow.meta.IrMetaContext
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.expressions.FirExpression
+import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
@@ -20,18 +20,18 @@ import org.jetbrains.kotlin.name.Name
 
 annotation class Meta {
 
-  sealed interface Checker<E> {
+  sealed interface Checker {
 
-    interface Declaration<E : FirDeclaration> : Checker<E> {
-      fun check(declaration: E, context: CheckerContext, reporter: DiagnosticReporter)
+    interface Declaration<E : FirDeclaration> {
+      fun FirMetaContext.check(declaration: E, context: CheckerContext, reporter: DiagnosticReporter)
     }
 
-    interface Expression<E : FirExpression> : Checker<E> {
+    interface Expression<E : FirStatement> {
       fun FirMetaContext.check(expression: E, context: CheckerContext, reporter: DiagnosticReporter)
     }
 
-    interface Type<E : FirTypeRef> : Checker<E> {
-      fun check(typeRef: E, context: CheckerContext, reporter: DiagnosticReporter)
+    interface Type<E : FirTypeRef> {
+      fun FirMetaContext.check(typeRef: E, context: CheckerContext, reporter: DiagnosticReporter)
     }
 
   }

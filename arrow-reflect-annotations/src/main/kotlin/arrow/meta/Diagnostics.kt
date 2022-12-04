@@ -5,8 +5,8 @@ import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.BaseDiagnosticRendererFactory
 import org.jetbrains.kotlin.diagnostics.rendering.Renderer
 import org.jetbrains.kotlin.diagnostics.rendering.RootDiagnosticRendererFactory
+import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
-import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.renderWithType
 
 abstract class Diagnostics(val head: KtDiagnosticFactory1<String>, vararg factories: KtDiagnosticFactory1<String>) : BaseDiagnosticRendererFactory() {
@@ -30,7 +30,7 @@ abstract class Diagnostics(val head: KtDiagnosticFactory1<String>, vararg factor
       }
     }
 
-  fun FirExpression.report(factory : KtDiagnosticFactory1<String>, msg: String, context: CheckerContext, reporter: DiagnosticReporter) {
+  fun FirElement.report(factory : KtDiagnosticFactory1<String>, msg: String, context: CheckerContext, reporter: DiagnosticReporter) {
     reporter.reportOn(
       source,
       factory,

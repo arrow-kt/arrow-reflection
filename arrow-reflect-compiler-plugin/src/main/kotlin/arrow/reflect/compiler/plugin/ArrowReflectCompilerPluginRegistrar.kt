@@ -1,5 +1,6 @@
 package arrow.reflect.compiler.plugin
 
+import arrow.meta.FrontendScopeCache
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.FirArrowReflectExtensionRegistrar
 import arrow.reflect.compiler.plugin.ir.IrMetaExtensionRegistrar
@@ -15,9 +16,9 @@ class ArrowReflectCompilerPluginRegistrar : CompilerPluginRegistrar() {
   override val supportsK2: Boolean = true
 
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    val sourceCache: MutableMap<Pair<Int, Int>, String> = mutableMapOf()
+    val frontendScopeCache: FrontendScopeCache = FrontendScopeCache()
     val templateCompiler =
-      TemplateCompiler({}, CommonPlatforms.defaultCommonPlatform, configuration, sourceCache)
+      TemplateCompiler({}, CommonPlatforms.defaultCommonPlatform, configuration, frontendScopeCache)
     val metaTargets = ClasspathMetaScanner.classPathMetaTargets()
     FirExtensionRegistrarAdapter.registerExtension(
       FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets)

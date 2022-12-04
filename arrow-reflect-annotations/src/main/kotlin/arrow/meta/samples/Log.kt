@@ -17,18 +17,19 @@ object Errors : Diagnostics.Error {
 @Retention(AnnotationRetention.SOURCE)
 @Meta
 annotation class Log {
-  companion object :
-    Meta.Checker.Expression<FirExpression>,
-    Diagnostics(META_LOG) {
+  companion object : Meta.Checker.Expression<FirExpression>, Diagnostics(META_LOG) {
 
-    override fun FirMetaContext.check(expression: FirExpression, context: CheckerContext, reporter: DiagnosticReporter) {
+    /**
+     * This function is called by the compiler plugin to check the annotated expression.
+     */
+    override fun FirMetaContext.check(
+      expression: FirExpression, context: CheckerContext, reporter: DiagnosticReporter
+    ) {
       expression.report(
-        META_LOG,
-        expression.renderWithType(),
-        context,
-        reporter
+        META_LOG, expression.renderWithType(), context, reporter
       )
     }
+
   }
 
 }

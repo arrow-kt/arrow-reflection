@@ -9,16 +9,16 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.expressions.FirCall
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
+import org.jetbrains.kotlin.fir.types.FirTypeRef
+import org.jetbrains.kotlin.fir.types.coneType
+import org.jetbrains.kotlin.fir.types.renderReadableWithFqNames
 import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 import org.jetbrains.kotlin.ir.IrElement
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
-import org.jetbrains.kotlin.ir.expressions.impl.IrExpressionBodyImpl
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
 import org.jetbrains.kotlin.name.Name
@@ -71,17 +71,19 @@ class FirMetaContext(
     }
 
   fun String.functionIn(firClass: FirClass): FirSimpleFunction {
-    val results = templateCompiler.compileSource(this, extendedAnalysisMode = false, firClass)
+    val results = templateCompiler.compileSource(this, extendedAnalysisMode = false, listOf(firClass))
     val firFiles = results.firResults.flatMap { it.files }
     val currentElement: FirSimpleFunction? = findSelectedFirElement(FirSimpleFunction::class, firFiles)
     return currentElement ?: error("Could not find a ${FirSimpleFunction::class}")
   }
 
   operator fun FirElement.unaryPlus(): String =
-    psi?.text ?: error("$this has no source psi text element")
+    psi?.text
+      ?: (this as? FirTypeRef)?.coneType?.renderReadableWithFqNames()?.replace("/", ".")
+      ?: error("$this has no source psi text element")
 
-  inline fun <reified Fir : FirElement> String.frontend(): Fir {
-    val results = templateCompiler.compileSource(this, extendedAnalysisMode = false, null)
+  inline fun <reified Fir : FirElement> String.frontend(context: List<FirDeclaration>): Fir {
+    val results = templateCompiler.compileSource(this, extendedAnalysisMode = false, context)
     val firFiles = results.firResults.flatMap { it.files }
     val currentElement: Fir? = findSelectedFirElement(Fir::class, firFiles)
     return currentElement ?: error("Could not find a ${Fir::class}")
@@ -109,31 +111,24 @@ class FirMetaContext(
   fun Iterable<FirElement>.source(separator: String = ", ", unit: Unit = Unit): String =
     joinToString(", ") { +it }
 
-  val String.call: FirCall
-    get() =
-      """
-      val x = $this
-    """.frontend()
-
-
 }
 
 class IrMetaContext(
   override val templateCompiler: TemplateCompiler,
-  val irPluginContext: IrPluginContext
+  val irPluginContext: IrPluginContext,
+  val currentFile: IrFile
 ) : MetaContext(templateCompiler) {
 
 
-  val String.expressionBody: IrExpressionBody
-    get() =
-      IrExpressionBodyImpl(
-        UNDEFINED_OFFSET, UNDEFINED_OFFSET, backend<IrExpression>()
-      )
-
-  inline fun <reified Ir : IrElement> String.backend(): Ir {
-    val results = templateCompiler.compileSource(this, extendedAnalysisMode = true, null, produceIr = true)
+  inline fun <reified Ir : IrElement> String.backend(scope: IrStatement? = null): Ir {
+    val scopeDeclarations =
+      scope?.let { templateCompiler.frontEndScopeCache.getScope(currentFile, it) }?.scopes.orEmpty()
+    val results = templateCompiler.compileSource(this, extendedAnalysisMode = true, scopeDeclarations, produceIr = true)
     val irModuleFragments = results.irResults.map { it.irModuleFragment }
-    val currentElement: Ir? = findSelectedIrElement(Ir::class, irModuleFragments)
+    val klass = Ir::class
+    val currentElement: Ir? = findSelectedIrElement(klass, irModuleFragments)
+    val scopeWithParent = scope
+    //parent?.let { currentElement?.setDeclarationsParent(it) }
     return currentElement ?: error("Could not find a ${Ir::class}")
   }
 
@@ -145,6 +140,7 @@ class IrMetaContext(
     irModuleFragments.forEach { irModuleFragment ->
       irModuleFragment.accept(object : IrElementVisitor<Unit, Unit> {
         override fun visitElement(element: IrElement, data: Unit) {
+          if (element is IrFile && !element.name.startsWith("meta.template_")) return
           if (irElementClass.isInstance(element)) {
             currentElement = element as Ir
           } else
@@ -155,8 +151,18 @@ class IrMetaContext(
     return currentElement
   }
 
-  operator fun IrElement.unaryPlus(): String =
-    templateCompiler.sourceCache[startOffset to endOffset] ?: dumpKotlinLike(
+  operator fun IrType.unaryPlus(): String =
+    dumpKotlinLike()
+
+  operator fun IrElement.unaryPlus(): String {
+    val source = if (this is IrClass) {
+      classId?.let { templateCompiler.frontEndScopeCache.getClassScope(it) }
+    } else if (this is IrSimpleFunction) {
+      TODO()
+    } else {
+      templateCompiler.frontEndScopeCache.getScope(currentFile, this)
+    }
+    return source?.source ?: dumpKotlinLike(
       options = KotlinLikeDumpOptions(
         printRegionsPerFile = false,
         printFileName = false,
@@ -167,6 +173,7 @@ class IrMetaContext(
         printElseAsTrue = false,
       )
     )
+  }
 
   operator fun Iterable<IrElement>.unaryPlus(): String =
     source()
@@ -182,7 +189,7 @@ class IrMetaContext(
     get() =
       """
       val x = $this
-    """.backend<IrConst<*>>()
+    """.backend<IrConst<*>>(null)
 
 }
 

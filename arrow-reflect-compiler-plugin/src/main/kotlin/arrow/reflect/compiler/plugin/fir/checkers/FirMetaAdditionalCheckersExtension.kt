@@ -7,6 +7,7 @@ import arrow.reflect.compiler.plugin.targets.MetaTarget
 import arrow.reflect.compiler.plugin.targets.MetagenerationTarget
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.FirAnnotationContainer
+import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.analysis.checkers.declaration.DeclarationCheckers
@@ -16,13 +17,12 @@ import org.jetbrains.kotlin.fir.analysis.checkers.expression.FirBasicExpressionC
 import org.jetbrains.kotlin.fir.analysis.checkers.type.TypeCheckers
 import org.jetbrains.kotlin.fir.analysis.extensions.FirAdditionalCheckersExtension
 import org.jetbrains.kotlin.fir.declarations.FirDeclaration
-import org.jetbrains.kotlin.fir.expressions.FirAnnotation
-import org.jetbrains.kotlin.fir.expressions.FirExpression
-import org.jetbrains.kotlin.fir.expressions.FirStatement
-import org.jetbrains.kotlin.fir.expressions.classId
+import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
+import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
 import kotlin.reflect.KClass
 
 class FirMetaAdditionalCheckersExtension(
@@ -43,7 +43,15 @@ class FirMetaAdditionalCheckersExtension(
   ): Out? {
     val args = listOf(In1::class, In2::class, In3::class)
     val retType = Out::class
-    return MetaTarget.find(annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(), methodName, superType, MetagenerationTarget.Fir, args, retType, metaTargets)?.let { target ->
+    return MetaTarget.find(
+      annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
+      methodName,
+      superType,
+      MetagenerationTarget.Fir,
+      args,
+      retType,
+      metaTargets
+    )?.let { target ->
       val result = target.method.invoke(target.companion.objectInstance, metaContext, arg, arg2, arg3)
       result as? Out
     }
@@ -53,39 +61,62 @@ class FirMetaAdditionalCheckersExtension(
     override val basicDeclarationCheckers: Set<FirBasicDeclarationChecker> = setOf(
       object : FirBasicDeclarationChecker() {
         override fun check(declaration: FirDeclaration, context: CheckerContext, reporter: DiagnosticReporter) {
-          if (declaration.isMetaAnnotated(session)) {
-            templateCompiler.addToSourceCache(declaration)
-          }
+          templateCompiler.frontEndScopeCache.addDeclaration(context, declaration)
+          invokeChecker(Meta.Checker.Declaration::class, declaration, session, context, reporter)
         }
       }
     )
   }
+
   override val expressionCheckers: ExpressionCheckers = object : ExpressionCheckers() {
     override val basicExpressionCheckers: Set<FirBasicExpressionChecker> = setOf(
       object : FirBasicExpressionChecker() {
         override fun check(expression: FirStatement, context: CheckerContext, reporter: DiagnosticReporter) {
-          if (expression.isMetaAnnotated(session)) {
-            templateCompiler.addToSourceCache(expression)
-            if (expression is FirExpression) {
-              val annotations = expression.metaAnnotations(session)
-              invokeMeta<FirExpression, CheckerContext, DiagnosticReporter, Unit>(
+          templateCompiler.frontEndScopeCache.addElement(context, expression)
+          invokeChecker(Meta.Checker.Expression::class, expression, session, context, reporter)
+          if (expression is FirFunctionCall) {
+            val declaration = context.containingDeclarations.firstIsInstanceOrNull<FirSimpleFunction>()
+            if (declaration != null) {
+              // invoke a potential expression transformation
+              val annotations = expression.toResolvedCallableReference()?.resolvedSymbol?.fir?.metaAnnotations(session).orEmpty()
+              invokeMeta<FirDeclaration, CheckerContext, DiagnosticReporter, Unit>(
                 annotations,
-                superType = Meta.Checker.Expression::class,
+                superType = Meta.Checker.Declaration::class,
                 methodName = "check",
-                expression,
+                declaration,
                 arg2 = context,
                 arg3 = reporter
               )
             }
-
           }
         }
       }
     )
   }
 
+  private inline fun <reified E : FirElement> invokeChecker(
+      superType: KClass<*>,
+      element: E,
+      session: FirSession,
+      context: CheckerContext,
+      reporter: DiagnosticReporter
+  ) {
+    if (element is FirAnnotationContainer && element.isMetaAnnotated(session)) {
+        val annotations = element.metaAnnotations(session)
+        invokeMeta<E, CheckerContext, DiagnosticReporter, Unit>(
+          annotations,
+          superType = superType,
+          methodName = "check",
+          element,
+          arg2 = context,
+          arg3 = reporter
+        )
+      }
+    }
+
   override val typeCheckers: TypeCheckers
     get() = super.typeCheckers
+
 }
 
 fun FirAnnotationContainer.metaAnnotations(session: FirSession): List<FirAnnotation> =
