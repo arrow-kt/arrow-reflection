@@ -25,7 +25,13 @@ annotation class Decorator {
 
     fun <In, Out> decorate(args: List<In>, func: (List<In>) -> Out): Out {
       println("Arguments: $args")
-      val result = func(args)
+      val newArgs = args.map {
+        when (it) {
+          is Int -> (it + 1) as In
+          else -> it
+        }
+      }
+      val result = func(newArgs)
       println("Return value: $result")
       return result
     }

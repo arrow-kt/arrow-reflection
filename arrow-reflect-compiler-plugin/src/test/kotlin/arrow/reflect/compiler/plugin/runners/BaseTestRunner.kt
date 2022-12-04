@@ -1,9 +1,6 @@
 package arrow.reflect.compiler.plugin.runners
 
-import arrow.reflect.compiler.plugin.services.ExtensionRegistrarConfigurator
-import arrow.reflect.compiler.plugin.services.PluginAnnotationsConfigurator
-import arrow.reflect.compiler.plugin.services.AdditionalFilesDirectives
-import arrow.reflect.compiler.plugin.services.AdditionalFilesProvider
+import arrow.reflect.compiler.plugin.services.*
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
 import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
@@ -47,7 +44,10 @@ fun TestConfigurationBuilder.commonFirWithPluginFrontendConfiguration() {
 
   useConfigurators(
     ::PluginAnnotationsConfigurator,
-    ::ExtensionRegistrarConfigurator,
+    ::ExtensionRegistrarConfigurator
+  )
+  useCustomRuntimeClasspathProviders(
+    ::MetaRuntimeClasspathProvider
   )
 
   useAdditionalSourceProviders(::AdditionalFilesProvider)
