@@ -12,7 +12,7 @@ FILE fqName:foo.bar fileName:/decorator_expected_test.kt
         CALL 'public final fun decorate <In, Out> (args: kotlin.collections.List<In of arrow.meta.samples.Decorator.Companion.decorate>, func: kotlin.Function1<kotlin.collections.List<In of arrow.meta.samples.Decorator.Companion.decorate>, Out of arrow.meta.samples.Decorator.Companion.decorate>): Out of arrow.meta.samples.Decorator.Companion.decorate declared in arrow.meta.samples.Decorator.Companion' type=kotlin.Int origin=null
           <In>: kotlin.Any?
           <Out>: kotlin.Int
-          $this: GET_OBJECT 'CLASS IR_EXTERNAL_DECLARATION_STUB OBJECT name:Companion modality:FINAL visibility:public [companion] superTypes:[arrow.meta.Meta.Checker.Declaration<org.jetbrains.kotlin.fir.declarations.FirDeclaration>]' type=arrow.meta.samples.Decorator.Companion
+          $this: GET_OBJECT 'CLASS IR_EXTERNAL_DECLARATION_STUB OBJECT name:Companion modality:FINAL visibility:public [companion] superTypes:[arrow.meta.Meta.CallInterceptor]' type=arrow.meta.samples.Decorator.Companion
           args: CALL 'public final fun listOf <T> (element: T of kotlin.collections.CollectionsKt.listOf): kotlin.collections.List<T of kotlin.collections.CollectionsKt.listOf> declared in kotlin.collections.CollectionsKt' type=kotlin.collections.List<kotlin.Int> origin=null
             <T>: kotlin.Int
             element: CONST Int type=kotlin.Int value=0
