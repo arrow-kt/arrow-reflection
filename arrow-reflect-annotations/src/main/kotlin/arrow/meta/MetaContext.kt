@@ -1,6 +1,5 @@
-package arrow.meta.module.impl.arrow.meta
+package arrow.meta
 
-import arrow.meta.TemplateCompiler
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
 import org.jetbrains.kotlin.cli.common.messages.MessageUtil

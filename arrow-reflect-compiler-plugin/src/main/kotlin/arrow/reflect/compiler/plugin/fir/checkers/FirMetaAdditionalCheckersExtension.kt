@@ -1,8 +1,8 @@
 package arrow.reflect.compiler.plugin.fir.checkers
 
+import arrow.meta.FirMetaContext
 import arrow.meta.Meta
 import arrow.meta.TemplateCompiler
-import arrow.meta.module.impl.arrow.meta.FirMetaContext
 import arrow.reflect.compiler.plugin.targets.MetaTarget
 import arrow.reflect.compiler.plugin.targets.MetagenerationTarget
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter

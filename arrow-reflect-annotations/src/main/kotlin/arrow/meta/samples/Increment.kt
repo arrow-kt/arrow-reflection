@@ -1,7 +1,7 @@
 package arrow.meta.samples
 
+import arrow.meta.IrMetaContext
 import arrow.meta.Meta
-import arrow.meta.module.impl.arrow.meta.IrMetaContext
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 

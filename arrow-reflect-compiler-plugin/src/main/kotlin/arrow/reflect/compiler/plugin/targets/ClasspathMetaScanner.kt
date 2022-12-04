@@ -1,7 +1,7 @@
 package arrow.reflect.compiler.plugin.targets
 
+import arrow.meta.IrMetaContext
 import arrow.meta.module.Module
-import arrow.meta.module.impl.arrow.meta.IrMetaContext
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfoList
 

@@ -1,8 +1,8 @@
 package arrow.reflect.compiler.plugin.ir
 
 import arrow.meta.FromTemplate
+import arrow.meta.IrMetaContext
 import arrow.meta.TemplateCompiler
-import arrow.meta.module.impl.arrow.meta.IrMetaContext
 import arrow.reflect.compiler.plugin.targets.MetaTarget
 import arrow.reflect.compiler.plugin.targets.MetagenerationTarget
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension

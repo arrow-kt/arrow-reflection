@@ -1,6 +1,6 @@
-package arrow.meta.samples
+package arrow.meta
 
-import arrow.meta.module.impl.arrow.meta.FirMetaContext
+import arrow.meta.samples.Decorator
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.declarations.*

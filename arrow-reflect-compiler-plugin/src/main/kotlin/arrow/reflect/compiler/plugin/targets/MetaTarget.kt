@@ -1,7 +1,7 @@
 package arrow.reflect.compiler.plugin.targets
 
-import arrow.meta.module.impl.arrow.meta.FirMetaContext
-import arrow.meta.module.impl.arrow.meta.IrMetaContext
+import arrow.meta.FirMetaContext
+import arrow.meta.IrMetaContext
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
 import kotlin.reflect.full.allSuperclasses

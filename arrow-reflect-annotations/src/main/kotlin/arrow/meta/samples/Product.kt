@@ -1,7 +1,7 @@
 package arrow.meta.samples
 
+import arrow.meta.FirMetaContext
 import arrow.meta.Meta
-import arrow.meta.module.impl.arrow.meta.FirMetaContext
 import org.jetbrains.kotlin.fir.declarations.*
 
 @Target(AnnotationTarget.CLASS)

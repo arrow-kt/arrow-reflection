@@ -1,10 +1,9 @@
 package arrow.meta
 
-import arrow.meta.module.impl.arrow.meta.FirMetaContext
-import arrow.meta.module.impl.arrow.meta.IrMetaContext
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.expressions.FirCall
 import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
@@ -19,6 +18,18 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 
 annotation class Meta {
+
+  interface CallInterceptor : Checker.Declaration<FirDeclaration> {
+
+    override fun FirMetaContext.check(
+      declaration: FirDeclaration, context: CheckerContext, reporter: DiagnosticReporter
+    ) {
+      declaration.transform<FirCall, Unit>(
+        CallDecoratorTransformer(this, context), Unit
+      )
+    }
+
+  }
 
   sealed interface Checker {
 

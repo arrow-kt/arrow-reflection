@@ -1,8 +1,8 @@
 package arrow.meta.samples
 
 import arrow.meta.Diagnostics
+import arrow.meta.FirMetaContext
 import arrow.meta.Meta
-import arrow.meta.module.impl.arrow.meta.FirMetaContext
 import arrow.meta.samples.Errors.META_LOG
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
