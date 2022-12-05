@@ -142,52 +142,56 @@ class TemplateCompiler(
     val irResults: List<Fir2IrResult>
   )
 
+  var compiling: Boolean = false
+
   fun compileSource(
     source: String,
     extendedAnalysisMode: Boolean,
     scopeDeclarations : List<FirDeclaration>,
     produceIr: Boolean = false
   ): TemplateResult {
-    val performanceManager = projectConfiguration.get(CLIConfigurationKeys.PERF_MANAGER)
+    compiling = true
+    try {
+      val performanceManager = projectConfiguration.get(CLIConfigurationKeys.PERF_MANAGER)
 
-    val targetIds = projectConfiguration.get(JVMConfigurationKeys.MODULES)?.map(::TargetId)
-    val incrementalComponents = projectConfiguration.get(JVMConfigurationKeys.INCREMENTAL_COMPILATION_COMPONENTS)
-    val isMultiModuleChunk = chunk.size > 1
+      val targetIds = projectConfiguration.get(JVMConfigurationKeys.MODULES)?.map(::TargetId)
+      val incrementalComponents = projectConfiguration.get(JVMConfigurationKeys.INCREMENTAL_COMPILATION_COMPONENTS)
+      val isMultiModuleChunk = chunk.size > 1
 
-    val next = counter.incrementAndGet()
-    val fileName = "meta.template_$next.kt"
-    println("parsing source:\n$source")
-    val allSources = //additionalFiles.map { ktPsiFactory.createPhysicalFile(it.name, it.readText())}
-      listOfNotNull(
-        ktPsiFactory.createPhysicalFile(fileName, source)
-      )
+      val next = counter.incrementAndGet()
+      val fileName = "meta.template_$next.kt"
+      println("parsing source:\n$source")
+      val allSources = //additionalFiles.map { ktPsiFactory.createPhysicalFile(it.name, it.readText())}
+        listOfNotNull(
+          ktPsiFactory.createPhysicalFile(fileName, source)
+        )
 
-    // TODO: run lowerings for all modules in the chunk, then run codegen for all modules.
-    val outputs: ArrayList<FirResult> = arrayListOf()
-    val irOutput: ArrayList<Fir2IrResult> = arrayListOf()
-    val project = (projectEnvironment as? VfsBasedProjectEnvironment)?.project
-    for (module in chunk) {
-      val moduleConfiguration = projectConfiguration.applyModuleProperties(module, buildFile)
-      val context = CompilationContext(
-        module,
-        module.getSourceFiles(
-          allSources,
-          (projectEnvironment as? VfsBasedProjectEnvironment)?.localFileSystem,
-          isMultiModuleChunk,
-          buildFile
-        ),
-        projectEnvironment,
-        messageCollector,
-        moduleConfiguration.getBoolean(CLIConfigurationKeys.RENDER_DIAGNOSTIC_INTERNAL_NAME),
-        moduleConfiguration,
-        performanceManager,
-        targetIds,
-        incrementalComponents,
-        extendedAnalysisMode,
-        firExtensionRegistrars = project?.let { FirExtensionRegistrar.getInstances(it) } ?: emptyList(),
-        irGenerationExtensions = project?.let { IrGenerationExtension.getInstances(it) } ?: emptyList()
-      )
-      val result = context.compileModule(scopeDeclarations)
+      // TODO: run lowerings for all modules in the chunk, then run codegen for all modules.
+      val outputs: ArrayList<FirResult> = arrayListOf()
+      val irOutput: ArrayList<Fir2IrResult> = arrayListOf()
+      val project = (projectEnvironment as? VfsBasedProjectEnvironment)?.project
+      for (module in chunk) {
+        val moduleConfiguration = projectConfiguration.applyModuleProperties(module, buildFile)
+        val context = CompilationContext(
+          module,
+          module.getSourceFiles(
+            allSources,
+            (projectEnvironment as? VfsBasedProjectEnvironment)?.localFileSystem,
+            isMultiModuleChunk,
+            buildFile
+          ),
+          projectEnvironment,
+          messageCollector,
+          moduleConfiguration.getBoolean(CLIConfigurationKeys.RENDER_DIAGNOSTIC_INTERNAL_NAME),
+          moduleConfiguration,
+          performanceManager,
+          targetIds,
+          incrementalComponents,
+          extendedAnalysisMode,
+          firExtensionRegistrars = project?.let { FirExtensionRegistrar.getInstances(it) } ?: emptyList(),
+          irGenerationExtensions = project?.let { IrGenerationExtension.getInstances(it) } ?: emptyList()
+        )
+        val result = context.compileModule(scopeDeclarations)
 //      val scopedClassSymbol: FirClassSymbol<out FirClass>? = scopeDeclarations.firstIsInstanceOrNull<FirClass>()?.symbol
 //      if (result != null && scopedClassSymbol != null) {
 //        result.files.forEach { file ->
@@ -206,16 +210,19 @@ class TemplateCompiler(
 //        }
 //      }
 
-      val templateResult = result ?: return TemplateResult(emptyList(), emptyList())
-      outputs += templateResult
+        val templateResult = result ?: return TemplateResult(emptyList(), emptyList())
+        outputs += templateResult
 
-      if (produceIr) {
-        outputs.forEach {
-          irOutput.add(convertToIR(it, moduleConfiguration))
+        if (produceIr) {
+          outputs.forEach {
+            irOutput.add(convertToIR(it, moduleConfiguration))
+          }
         }
       }
+      return TemplateResult(outputs, irOutput)
+    } finally {
+        compiling = false
     }
-    return TemplateResult(outputs, irOutput)
   }
 
   private fun CompilationContext.compileModule(scopeDeclarations: List<FirDeclaration>): FirResult? {
@@ -310,7 +317,21 @@ class TemplateCompiler(
     val rawFir = session.buildFirFromKtFiles(ktFiles)
 
     val (scopeSession, fir) = session.runResolution(rawFir, scope, scopeDeclarations)
+//    val declarationCheckers = session.checkersComponent.declarationCheckers.basicDeclarationCheckers as? MutableSet<FirBasicDeclarationChecker>
+//    val metaDeclarationChecker = declarationCheckers?.firstOrNull { it.toString().startsWith("arrow.reflect.compiler.plugin.fir.checkers.FirMetaAdditionalCheckersExtension") == true }
+//    declarationCheckers?.removeIf { it == metaDeclarationChecker }
+//
+//    val expressionCheckers = session.checkersComponent.expressionCheckers.basicExpressionCheckers as? MutableSet<FirBasicExpressionChecker>
+//    val metaExpressionChecker = expressionCheckers?.firstOrNull { it.toString().startsWith("arrow.reflect.compiler.plugin.fir.checkers.FirMetaAdditionalCheckersExtension") == true }
+//    expressionCheckers?.removeIf { it == metaExpressionChecker }
+
     session.runCheckers(scopeSession, fir, diagnosticsReporter)
+//    metaDeclarationChecker?.let { declarationCheckers.add(it) }
+//    metaExpressionChecker?.let { expressionCheckers.add(it) }
+    //TODO recursive loop here when invoked from Fir transformer meta dispatching
+    // look for a safer place where to place transformer where running the checkers
+    // from here is observed on the receiver and it does go through the extensions
+    // of the current session
 
     return if (syntaxErrors || diagnosticsReporter.hasErrors) null else FirResult(session, scopeSession, fir, scopeDeclarations)
     //return if (syntaxErrors) null else FirResult(session, scopeSession, fir)

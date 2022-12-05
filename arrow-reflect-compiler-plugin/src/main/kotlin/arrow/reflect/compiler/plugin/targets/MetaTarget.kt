@@ -26,7 +26,7 @@ data class MetaTarget(
       targets: List<MetaTarget>
     ): MetaTarget? =
       targets.find {
-        (annotations.isEmpty() || it.annotation.java.canonicalName in annotations) &&
+        (it.annotation.java.canonicalName in annotations) &&
         (supertype == null || it.companion.allSuperclasses.any {
           it == supertype
         }) &&

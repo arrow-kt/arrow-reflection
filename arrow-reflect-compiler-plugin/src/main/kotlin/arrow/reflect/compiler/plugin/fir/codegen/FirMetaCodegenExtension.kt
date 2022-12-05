@@ -158,36 +158,41 @@ class FirMetaCodegenExtension(
         invokeMeta(metaAnnotations, superType, "functions", callableId, context)
           ?: invokeMeta(metaAnnotations, superType, "functions", callableId)
       val decls = context.owner.fir.declarations as? MutableList<FirDeclaration>
-      val patched =
-        functions?.map { simpleFunction ->
-          buildSimpleFunctionCopy(simpleFunction) {
-            annotations += buildAnnotation {
-              annotationTypeRef = buildResolvedTypeRef { type = fromTemplateAnnotationType }
-              argumentMapping =
-                FirAnnotationArgumentMappingImpl(
-                  null,
-                  mapOf(
-                    Name.identifier("parent") to
-                      buildConstExpression(
-                        null,
-                        ConstantValueKind.String,
-                        callableId.classId?.asString() ?: error("expected class name in callable"),
-                        mutableListOf(),
-                        true
-                      )
-                  )
-                )
-            }
-            symbol =
-              FirNamedFunctionSymbol(callableId).also {
-                // it.bind(simpleFunction)
-              }
-            dispatchReceiverType = context.owner.defaultType()
-          }
-        }
+      val patched = patchedfunctions(functions, callableId, context)
       decls?.addAll(patched.orEmpty())
       patched?.map { it.symbol } ?: super.generateFunctions(callableId, context)
     } else super.generateFunctions(callableId, context)
+  }
+
+  private fun patchedfunctions(
+    functions: List<FirSimpleFunction>?,
+    callableId: CallableId,
+    context: MemberGenerationContext
+  ): List<FirSimpleFunction>? = functions?.map { simpleFunction ->
+    buildSimpleFunctionCopy(simpleFunction) {
+      annotations += buildAnnotation {
+        annotationTypeRef = buildResolvedTypeRef { type = fromTemplateAnnotationType }
+        argumentMapping =
+          FirAnnotationArgumentMappingImpl(
+            null,
+            mapOf(
+              Name.identifier("parent") to
+                buildConstExpression(
+                  null,
+                  ConstantValueKind.String,
+                  callableId.classId?.asString() ?: error("expected class name in callable"),
+                  mutableListOf(),
+                  true
+                )
+            )
+          )
+      }
+      symbol =
+        FirNamedFunctionSymbol(callableId).also {
+          // it.bind(simpleFunction)
+        }
+      dispatchReceiverType = context.owner.defaultType()
+    }
   }
 
   override fun generateProperties(
@@ -266,7 +271,8 @@ class FirMetaCodegenExtension(
   override fun getTopLevelCallableIds(): Set<CallableId> =
     topLevelProperties().orEmpty() + topLevelFunctions().orEmpty()
 
-  override fun getTopLevelClassIds(): Set<ClassId> = topLevelClasses().orEmpty()
+  override fun getTopLevelClassIds(): Set<ClassId> =
+    topLevelClasses().orEmpty()
 
   override fun hasPackage(packageFqName: FqName): Boolean {
     return true

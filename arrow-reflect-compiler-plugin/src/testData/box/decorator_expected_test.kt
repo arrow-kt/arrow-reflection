@@ -6,7 +6,7 @@ fun foo(value: Int): Int =
   value + 41
 
 fun box(): String {
-  val x = Decorator.decorate<Any?, Int>(listOf(0)) { args: List<Any?> ->
+  val x = Decorator.intercept(listOf(0)) { args: List<Any?> ->
     foo(args[0] as Int)
   }
   return if (x == 42) {
