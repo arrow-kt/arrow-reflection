@@ -1,6 +1,7 @@
 package arrow.reflect.compiler.plugin.targets
 
-import arrow.meta.FirMetaContext
+import arrow.meta.FirMetaCheckerContext
+import arrow.meta.FirMetaMemberGenerationContext
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
 import kotlin.reflect.full.allSuperclasses
@@ -31,7 +32,8 @@ data class MetaTarget(
         }) &&
           it.method.name == methodName &&
           it.target == target &&
-          (listOf(FirMetaContext::class) + args).subtypesOf(it.args)
+          ((listOf(FirMetaCheckerContext::class) + args).subtypesOf(it.args) ||
+          (listOf(FirMetaMemberGenerationContext::class) + args).subtypesOf(it.args))
 //          toKotlin(it.returnType) == returnType
       }
 
@@ -43,7 +45,7 @@ data class MetaTarget(
 
     private fun List<KClass<*>>.subtypesOf(other : List<KClass<*>>): Boolean =
       size == other.size && this.zip(other).all { (a, b) ->
-        a.isSubclassOf(b)
+        a == b || a.isSubclassOf(b)
       }
   }
 

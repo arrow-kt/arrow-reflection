@@ -1,6 +1,6 @@
 package arrow.reflect.compiler.plugin.fir.transformers
 
-import arrow.meta.FirMetaContext
+import arrow.meta.FirMetaCheckerContext
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.checkers.metaAnnotations
 import arrow.reflect.compiler.plugin.targets.MetaTarget
@@ -22,13 +22,13 @@ class FirMetaTransformer(
   val reporter: DiagnosticReporter,
 ) : FirTransformer<Unit>() {
 
-  val metaContext = FirMetaContext(templateCompiler, session)
+  val metaContext = FirMetaCheckerContext(templateCompiler, session, checkerContext, reporter)
 
   private fun <E : FirAnnotationContainer> invokeMeta(
     arg: E
   ): FirAnnotationContainer? {
     if (templateCompiler.compiling) return null
-    val args = listOf(arg::class, CheckerContext::class, DiagnosticReporter::class)
+    val args = listOf(arg::class)
     val metaAnnotations = arg.metaAnnotations(session)
     val metaClasses = arg.metaClasses()
     val dispatchers = metaClasses.mapNotNull {
@@ -45,7 +45,7 @@ class FirMetaTransformer(
 
     val result: FirAnnotationContainer? =
       dispatchers.fold(null) { out: FirAnnotationContainer?, target: MetaTarget ->
-        out ?: target.method.invoke(target.companion.objectInstance, metaContext, arg, checkerContext, reporter) as? FirAnnotationContainer
+        out ?: target.method.invoke(target.companion.objectInstance, metaContext, arg) as? FirAnnotationContainer
       }
 
     return result

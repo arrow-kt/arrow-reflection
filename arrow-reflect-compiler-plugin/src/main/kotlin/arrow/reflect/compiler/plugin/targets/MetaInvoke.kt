@@ -6,9 +6,10 @@ import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.resolve.fqName
 import kotlin.reflect.KClass
 
-class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>, val metaContext: FirMetaContext) {
+class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
 
   inline operator fun <reified In1, reified In2, reified In3, reified Out> invoke(
+    metaContext: FirMetaContext,
     annotations: List<FirAnnotation>,
     superType: KClass<*>,
     methodName: String,
@@ -32,9 +33,10 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>, val
   }
 
   inline operator fun <reified Out> invoke(
+    metaContext: FirMetaContext,
     annotations: List<FirAnnotation>,
     superType: KClass<*>,
-    methodName: String
+    methodName: String,
   ): Out? {
     val args = emptyList<KClass<*>>()
     val retType = Out::class
@@ -53,10 +55,11 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>, val
   }
 
   inline operator fun <reified In, reified Out> invoke(
+    metaContext: FirMetaContext,
     annotations: List<FirAnnotation>,
     superType: KClass<*>,
     methodName: String,
-    arg: In
+    arg: In,
   ): Out? {
     val args = listOf(In::class)
     val retType = Out::class
@@ -75,11 +78,12 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>, val
   }
 
   inline operator fun <reified In1, reified In2, reified Out> invoke(
+    metaContext: FirMetaContext,
     annotations: List<FirAnnotation>,
     superType: KClass<*>,
     methodName: String,
     arg: In1,
-    arg2: In2
+    arg2: In2,
   ): Out? {
     val args = listOf(In1::class, In2::class)
     val retType = Out::class

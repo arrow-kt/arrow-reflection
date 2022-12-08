@@ -1,35 +1,57 @@
 package arrow.meta.samples
 
 import arrow.meta.Diagnostics
-import arrow.meta.FirMetaContext
+import arrow.meta.FirMetaCheckerContext
 import arrow.meta.Meta
 import arrow.meta.samples.Errors.META_LOG
 import org.jetbrains.kotlin.diagnostics.*
-import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
+import org.jetbrains.kotlin.fir.FirElement
+import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.renderWithType
+import kotlin.annotation.AnnotationTarget.*
 
 object Errors : Diagnostics.Error {
   val META_LOG by error1()
 }
 
-@Target(AnnotationTarget.EXPRESSION)
+@Target(
+  CLASS,
+  ANNOTATION_CLASS,
+  TYPE_PARAMETER,
+  PROPERTY,
+  FIELD,
+  LOCAL_VARIABLE,
+  VALUE_PARAMETER,
+  CONSTRUCTOR,
+  FUNCTION,
+  PROPERTY_GETTER,
+  PROPERTY_SETTER,
+  TYPE,
+  EXPRESSION,
+  FILE,
+  TYPEALIAS
+)
 @Retention(AnnotationRetention.SOURCE)
 @Meta
 annotation class Log {
-  companion object : Meta.Checker.Expression<FirExpression>, Diagnostics(META_LOG) {
+  companion object : Meta.Checker.Declaration<FirDeclaration>, Meta.Checker.Expression<FirExpression>, Diagnostics(META_LOG) {
 
-    /**
-     * This function is called by the compiler plugin to check the annotated expression.
-     */
-    override fun FirMetaContext.check(
-      expression: FirExpression, context: CheckerContext, reporter: DiagnosticReporter
+    fun FirMetaCheckerContext.checkElement(
+      expression: FirElement
     ) {
       expression.report(
-        META_LOG, expression.renderWithType(), context, reporter
+        META_LOG, expression.renderWithType()
       )
     }
 
+    override fun FirMetaCheckerContext.check(
+      declaration: FirDeclaration,
+    ) = checkElement(declaration)
+
+    override fun FirMetaCheckerContext.check(
+      expression: FirExpression
+    ) = checkElement(expression)
   }
 
 }

@@ -1,6 +1,6 @@
 package arrow.reflect.compiler.plugin.fir.checkers
 
-import arrow.meta.FirMetaContext
+import arrow.meta.FirMetaCheckerContext
 import arrow.meta.Meta
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.transformers.FirMetaTransformer
@@ -31,8 +31,7 @@ class FirMetaAdditionalCheckersExtension(
   val metaTargets: List<MetaTarget>
 ) : FirAdditionalCheckersExtension(session) {
 
-  val metaContext = FirMetaContext(templateCompiler, session)
-  val invokeMeta = MetaInvoke(session, metaTargets, metaContext)
+  val invokeMeta = MetaInvoke(session, metaTargets)
 
   override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
     override val basicDeclarationCheckers: Set<FirBasicDeclarationChecker> = setOf(
@@ -69,13 +68,13 @@ class FirMetaAdditionalCheckersExtension(
   ) {
     if (element is FirAnnotationContainer && element.isMetaAnnotated(session)) {
         val annotations = element.metaAnnotations(session)
-        invokeMeta<E, CheckerContext, DiagnosticReporter, Unit>(
+        val metaContext = FirMetaCheckerContext(templateCompiler, session, context, reporter)
+        invokeMeta<E, Unit>(
+          metaContext,
           annotations,
           superType = superType,
           methodName = "check",
-          element,
-          arg2 = context,
-          arg3 = reporter
+          element
         )
       }
     }

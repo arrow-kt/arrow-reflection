@@ -1,9 +1,10 @@
 package foo.bar
 
-import arrow.meta.samples.Increment
+import arrow.meta.samples.Log
+
 
 fun main() {
-  val x = @Increment 10.0
-  println(x)
+  val x = ""
+  @Log println(x)
 }
 

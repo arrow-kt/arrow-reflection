@@ -1,9 +1,7 @@
 package arrow.meta
 
-import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.FirAnnotationContainer
 import org.jetbrains.kotlin.fir.FirLabel
-import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.contracts.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
@@ -28,10 +26,10 @@ annotation class Meta {
 
     fun <In, Out> intercept(args: List<In>, func: (List<In>) -> Out): Out
 
-    override fun FirMetaContext.functionCall(functionCall: FirFunctionCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement {
+    override fun FirMetaCheckerContext.functionCall(functionCall: FirFunctionCall): FirStatement {
       val newCall = if (isDecorated(functionCall)) {
         //language=kotlin
-        val call: FirCall = decoratedCall(functionCall, context)
+        val call: FirCall = decoratedCall(functionCall)
         call
       } else functionCall
       return newCall
@@ -49,16 +47,16 @@ annotation class Meta {
 
     @OptIn(SymbolInternals::class)
     private fun FirMetaContext.decoratedCall(
-      newElement: FirFunctionCall,
-      context: CheckerContext
+      newElement: FirFunctionCall
     ): FirCall {
       val args = newElement.arguments
       val argsApplied = args.mapIndexed { n, expr -> "args[$n] as ${+expr.typeRef}" }
       val name = newElement.toResolvedCallableSymbol()?.callableId?.asSingleFqName()?.asString()
       //language=kotlin
-      return """| import ${annotation.java.canonicalName}
-                | val x = ${annotation.java.simpleName}.intercept(listOf(${+args})) { args: List<Any?> -> ${name}(${+argsApplied}) }
-                |""".trimMargin().frontend<FirCall>(context.containingDeclarations)
+      return """
+             import ${annotation.java.canonicalName}
+             val x = ${annotation.java.simpleName}.intercept(listOf(${+args})) { args: List<Any?> -> ${name}(${+argsApplied}) }
+             """()
     }
 
   }
@@ -66,15 +64,15 @@ annotation class Meta {
   sealed interface Checker {
 
     interface Declaration<E : FirDeclaration> {
-      fun FirMetaContext.check(declaration: E,context: CheckerContext, reporter: DiagnosticReporter)
+      fun FirMetaCheckerContext.check(declaration: E)
     }
 
     interface Expression<E : FirStatement> {
-      fun FirMetaContext.check(expression: E,context: CheckerContext, reporter: DiagnosticReporter)
+      fun FirMetaCheckerContext.check(expression: E)
     }
 
     interface Type<E : FirTypeRef> {
-      fun FirMetaContext.check(typeRef: E,context: CheckerContext, reporter: DiagnosticReporter)
+      fun FirMetaCheckerContext.check(typeRef: E)
     }
 
   }
@@ -114,7 +112,7 @@ annotation class Meta {
         @OptIn(SymbolInternals::class)
         fun FirMetaContext.functions(callableId: CallableId, context: MemberGenerationContext): List<FirFunction> {
           val firClass = context.owner.fir
-          return newFunctions(firClass).values.map { it().functionIn(firClass) }
+          return newFunctions(firClass).values.map { it().function }
         }
 
         fun FirMetaContext.newFunctions(firClass: FirClass): Map<String, () -> String>
@@ -135,379 +133,379 @@ annotation class Meta {
   sealed interface FrontendTransformer {
 
     interface Declaration : FrontendTransformer {
-      fun FirMetaContext.annotation(annotation: FirDeclaration,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.annotation(annotation: FirDeclaration): FirStatement
     }
 
     interface Annotation : FrontendTransformer {
-      fun FirMetaContext.annotation(annotation: FirAnnotation,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.annotation(annotation: FirAnnotation): FirStatement
     }
 
     interface AnnotationCall : FrontendTransformer {
-      fun FirMetaContext.annotationCall(annotationCall: FirAnnotationCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.annotationCall(annotationCall: FirAnnotationCall): FirStatement
     }
 
     interface AnnotationContainer: FrontendTransformer {
-      fun FirMetaContext.annotationContainer(annotationContainer: FirAnnotationContainer,context: CheckerContext, reporter: DiagnosticReporter): FirAnnotationContainer
+      fun FirMetaCheckerContext.annotationContainer(annotationContainer: FirAnnotationContainer): FirAnnotationContainer
     }
 
     interface AnonymousFunction : FrontendTransformer {
-      fun FirMetaContext.anonymousFunction(anonymousFunction: FirAnonymousFunction,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.anonymousFunction(anonymousFunction: FirAnonymousFunction): FirStatement
     }
 
     interface AnonymousFunctionExpression: FrontendTransformer {
-      fun FirMetaContext.anonymousFunctionExpression(anonymousFunctionExpression: FirAnonymousFunctionExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.anonymousFunctionExpression(anonymousFunctionExpression: FirAnonymousFunctionExpression): FirStatement
     }
 
     interface AnonymousInitializer: FrontendTransformer {
-      fun FirMetaContext.anonymousInitializer(anonymousInitializer: FirAnonymousInitializer,context: CheckerContext, reporter: DiagnosticReporter): FirAnonymousInitializer
+      fun FirMetaCheckerContext.anonymousInitializer(anonymousInitializer: FirAnonymousInitializer): FirAnonymousInitializer
     }
 
     interface AnonymousObject : FrontendTransformer {
-      fun FirMetaContext.anonymousObject(anonymousObject: FirAnonymousObject,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.anonymousObject(anonymousObject: FirAnonymousObject): FirStatement
     }
 
     interface AnonymousObjectExpression: FrontendTransformer {
-      fun FirMetaContext.anonymousObjectExpression(anonymousObjectExpression: FirAnonymousObjectExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.anonymousObjectExpression(anonymousObjectExpression: FirAnonymousObjectExpression): FirStatement
     }
 
     interface ArrayOfCall : FrontendTransformer {
-      fun FirMetaContext.arrayOfCall(arrayOfCall: FirArrayOfCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.arrayOfCall(arrayOfCall: FirArrayOfCall): FirStatement
     }
 
     interface AssignmentOperatorStatement: FrontendTransformer {
-      fun FirMetaContext.assignmentOperatorStatement(assignmentOperatorStatement: FirAssignmentOperatorStatement,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.assignmentOperatorStatement(assignmentOperatorStatement: FirAssignmentOperatorStatement): FirStatement
     }
 
     interface AugmentedArraySetCall: FrontendTransformer {
-      fun FirMetaContext.augmentedArraySetCall(augmentedArraySetCall: FirAugmentedArraySetCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.augmentedArraySetCall(augmentedArraySetCall: FirAugmentedArraySetCall): FirStatement
     }
 
     interface BackingField : FrontendTransformer {
-      fun FirMetaContext.backingField(backingField: FirBackingField,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.backingField(backingField: FirBackingField): FirStatement
     }
 
     interface BinaryLogicExpression: FrontendTransformer {
-      fun FirMetaContext.binaryLogicExpression(binaryLogicExpression: FirBinaryLogicExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.binaryLogicExpression(binaryLogicExpression: FirBinaryLogicExpression): FirStatement
     }
 
     interface Block : FrontendTransformer {
-      fun FirMetaContext.block(block: FirBlock,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.block(block: FirBlock): FirStatement
     }
 
     interface BreakExpression : FrontendTransformer {
-      fun FirMetaContext.breakExpression(breakExpression: FirBreakExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.breakExpression(breakExpression: FirBreakExpression): FirStatement
     }
 
     interface Call : FrontendTransformer {
-      fun FirMetaContext.call(call: FirCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.call(call: FirCall): FirStatement
     }
 
     interface CallableDeclaration: FrontendTransformer {
-      fun FirMetaContext.callableDeclaration(callableDeclaration: FirCallableDeclaration,context: CheckerContext, reporter: DiagnosticReporter): FirCallableDeclaration
+      fun FirMetaCheckerContext.callableDeclaration(callableDeclaration: FirCallableDeclaration): FirCallableDeclaration
     }
 
     interface CallableReferenceAccess: FrontendTransformer {
-      fun FirMetaContext.callableReferenceAccess(callableReferenceAccess: FirCallableReferenceAccess,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.callableReferenceAccess(callableReferenceAccess: FirCallableReferenceAccess): FirStatement
     }
 
     interface CheckNotNullCall : FrontendTransformer {
-      fun FirMetaContext.checkNotNullCall(checkNotNullCall: FirCheckNotNullCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.checkNotNullCall(checkNotNullCall: FirCheckNotNullCall): FirStatement
     }
 
     interface CheckedSafeCallSubject: FrontendTransformer {
-      fun FirMetaContext.checkedSafeCallSubject(checkedSafeCallSubject: FirCheckedSafeCallSubject,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.checkedSafeCallSubject(checkedSafeCallSubject: FirCheckedSafeCallSubject): FirStatement
     }
 
     interface Class : FrontendTransformer {
-      fun FirMetaContext.regularClass(firClass: FirRegularClass,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.regularClass(firClass: FirRegularClass): FirStatement
     }
 
     interface ClassLikeDeclaration: FrontendTransformer {
-      fun FirMetaContext.classLikeDeclaration(classLikeDeclaration: FirClassLikeDeclaration,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.classLikeDeclaration(classLikeDeclaration: FirClassLikeDeclaration): FirStatement
     }
 
     interface ClassReferenceExpression: FrontendTransformer {
-      fun FirMetaContext.classReferenceExpression(classReferenceExpression: FirClassReferenceExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.classReferenceExpression(classReferenceExpression: FirClassReferenceExpression): FirStatement
     }
 
     interface ComparisonExpression: FrontendTransformer {
-      fun FirMetaContext.comparisonExpression(comparisonExpression: FirComparisonExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.comparisonExpression(comparisonExpression: FirComparisonExpression): FirStatement
     }
 
     interface ComponentCall : FrontendTransformer {
-      fun FirMetaContext.componentCall(componentCall: FirComponentCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.componentCall(componentCall: FirComponentCall): FirStatement
     }
 
     interface ConstExpression : FrontendTransformer {
-      fun FirMetaContext.constExpression(constExpression: FirConstExpression<*>,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.constExpression(constExpression: FirConstExpression<*>): FirStatement
     }
 
     interface Constructor : FrontendTransformer {
-      fun FirMetaContext.constructor(constructor: FirConstructor,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.constructor(constructor: FirConstructor): FirStatement
     }
 
     interface DelegatedConstructorCall: FrontendTransformer {
-      fun FirMetaContext.delegatedConstructorCall(delegatedConstructorCall: FirDelegatedConstructorCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.delegatedConstructorCall(delegatedConstructorCall: FirDelegatedConstructorCall): FirStatement
     }
 
     interface DoWhileLoop : FrontendTransformer {
-      fun FirMetaContext.doWhileLoop(doWhileLoop: FirDoWhileLoop,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.doWhileLoop(doWhileLoop: FirDoWhileLoop): FirStatement
     }
 
     interface DynamicTypeRef : FrontendTransformer {
-      fun FirMetaContext.dynamicTypeRef(dynamicTypeRef: FirDynamicTypeRef,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.dynamicTypeRef(dynamicTypeRef: FirDynamicTypeRef): FirTypeRef
     }
 
     interface ElvisExpression : FrontendTransformer {
-      fun FirMetaContext.elvisExpression(elvisExpression: FirElvisExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.elvisExpression(elvisExpression: FirElvisExpression): FirStatement
     }
 
     interface EnumEntry : FrontendTransformer {
-      fun FirMetaContext.enumEntry(enumEntry: FirEnumEntry,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.enumEntry(enumEntry: FirEnumEntry): FirStatement
     }
 
     interface EqualityOperatorCall: FrontendTransformer {
-      fun FirMetaContext.equalityOperatorCall(equalityOperatorCall: FirEqualityOperatorCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.equalityOperatorCall(equalityOperatorCall: FirEqualityOperatorCall): FirStatement
     }
 
     interface ErrorAnnotationCall : FrontendTransformer {
-      fun FirMetaContext.errorAnnotationCall(errorAnnotationCall: FirErrorAnnotationCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.errorAnnotationCall(errorAnnotationCall: FirErrorAnnotationCall): FirStatement
     }
 
     interface ErrorExpression : FrontendTransformer {
-      fun FirMetaContext.errorExpression(errorExpression: FirErrorExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.errorExpression(errorExpression: FirErrorExpression): FirStatement
     }
 
     interface ErrorFunction : FrontendTransformer {
-      fun FirMetaContext.errorFunction(errorFunction: FirErrorFunction,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.errorFunction(errorFunction: FirErrorFunction): FirStatement
     }
 
     interface ErrorLoop : FrontendTransformer {
-      fun FirMetaContext.errorLoop(errorLoop: FirErrorLoop,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.errorLoop(errorLoop: FirErrorLoop): FirStatement
     }
 
     interface ErrorProperty : FrontendTransformer {
-      fun FirMetaContext.errorProperty(errorProperty: FirErrorProperty,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.errorProperty(errorProperty: FirErrorProperty): FirStatement
     }
 
     interface ErrorResolvedQualifier: FrontendTransformer {
-      fun FirMetaContext.errorResolvedQualifier(errorResolvedQualifier: FirErrorResolvedQualifier,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.errorResolvedQualifier(errorResolvedQualifier: FirErrorResolvedQualifier): FirStatement
     }
 
     interface ErrorTypeRef : FrontendTransformer {
-      fun FirMetaContext.errorTypeRef(errorTypeRef: FirErrorTypeRef,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.errorTypeRef(errorTypeRef: FirErrorTypeRef): FirTypeRef
     }
 
     interface Expression : FrontendTransformer {
-      fun FirMetaContext.expression(expression: FirExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.expression(expression: FirExpression): FirStatement
     }
 
     interface Field : FrontendTransformer {
-      fun FirMetaContext.field(field: FirField,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.field(field: FirField): FirStatement
     }
 
     interface File : FrontendTransformer {
-      fun FirMetaContext.file(file: FirFile,context: CheckerContext, reporter: DiagnosticReporter): FirFile
+      fun FirMetaCheckerContext.file(file: FirFile): FirFile
     }
 
     interface Function : FrontendTransformer {
-      fun FirMetaContext.function(function: FirFunction,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.function(function: FirFunction): FirStatement
     }
 
     interface FunctionCall : FrontendTransformer {
-      fun FirMetaContext.functionCall(functionCall: FirFunctionCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.functionCall(functionCall: FirFunctionCall): FirStatement
     }
 
     interface FunctionTypeRef : FrontendTransformer {
-      fun FirMetaContext.functionTypeRef(functionTypeRef: FirFunctionTypeRef,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.functionTypeRef(functionTypeRef: FirFunctionTypeRef): FirTypeRef
     }
 
     interface GetClassCall : FrontendTransformer {
-      fun FirMetaContext.getClassCall(getClassCall: FirGetClassCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.getClassCall(getClassCall: FirGetClassCall): FirStatement
     }
 
     interface ImplicitInvokeCall : FrontendTransformer {
-      fun FirMetaContext.implicitInvokeCall(implicitInvokeCall: FirImplicitInvokeCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.implicitInvokeCall(implicitInvokeCall: FirImplicitInvokeCall): FirStatement
     }
 
     interface ImplicitTypeRef : FrontendTransformer {
-      fun FirMetaContext.implicitTypeRef(implicitTypeRef: FirImplicitTypeRef,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.implicitTypeRef(implicitTypeRef: FirImplicitTypeRef): FirTypeRef
     }
 
     interface IntegerLiteralOperatorCall: FrontendTransformer {
-      fun FirMetaContext.integerLiteralOperatorCall(integerLiteralOperatorCall: FirIntegerLiteralOperatorCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.integerLiteralOperatorCall(integerLiteralOperatorCall: FirIntegerLiteralOperatorCall): FirStatement
     }
 
     interface IntersectionTypeRef : FrontendTransformer {
-      fun FirMetaContext.intersectionTypeRef(intersectionTypeRef: FirIntersectionTypeRef,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.intersectionTypeRef(intersectionTypeRef: FirIntersectionTypeRef): FirTypeRef
     }
 
     interface Jump : FrontendTransformer {
-      fun FirMetaContext.jump(jump: FirJump<*>,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.jump(jump: FirJump<*>): FirStatement
     }
 
     interface Label : FrontendTransformer {
-      fun FirMetaContext.label(label: FirLabel,context: CheckerContext, reporter: DiagnosticReporter): FirLabel
+      fun FirMetaCheckerContext.label(label: FirLabel): FirLabel
     }
 
     interface LambdaArgumentExpression: FrontendTransformer {
-      fun FirMetaContext.lambdaArgumentExpression(lambdaArgumentExpression: FirLambdaArgumentExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.lambdaArgumentExpression(lambdaArgumentExpression: FirLambdaArgumentExpression): FirStatement
     }
 
     interface Loop : FrontendTransformer {
-      fun FirMetaContext.loop(loop: FirLoop,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.loop(loop: FirLoop): FirStatement
     }
 
     interface LoopJump : FrontendTransformer {
-      fun FirMetaContext.loopJump(loopJump: FirLoopJump,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.loopJump(loopJump: FirLoopJump): FirStatement
     }
 
     interface MemberDeclaration : FrontendTransformer {
-      fun FirMetaContext.memberDeclaration(memberDeclaration: FirMemberDeclaration,context: CheckerContext, reporter: DiagnosticReporter): FirMemberDeclaration
+      fun FirMetaCheckerContext.memberDeclaration(memberDeclaration: FirMemberDeclaration): FirMemberDeclaration
     }
 
     interface NamedArgumentExpression: FrontendTransformer {
-      fun FirMetaContext.namedArgumentExpression(namedArgumentExpression: FirNamedArgumentExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.namedArgumentExpression(namedArgumentExpression: FirNamedArgumentExpression): FirStatement
     }
 
     interface Property : FrontendTransformer {
-      fun FirMetaContext.property(property: FirProperty,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.property(property: FirProperty): FirStatement
     }
 
     interface PropertyAccessExpression: FrontendTransformer {
-      fun FirMetaContext.propertyAccessExpression(propertyAccessExpression: FirPropertyAccessExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.propertyAccessExpression(propertyAccessExpression: FirPropertyAccessExpression): FirStatement
     }
 
     interface PropertyAccessor : FrontendTransformer {
-      fun FirMetaContext.propertyAccessor(propertyAccessor: FirPropertyAccessor,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.propertyAccessor(propertyAccessor: FirPropertyAccessor): FirStatement
     }
 
     interface QualifiedAccess : FrontendTransformer {
-      fun FirMetaContext.qualifiedAccess(qualifiedAccess: FirQualifiedAccess,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.qualifiedAccess(qualifiedAccess: FirQualifiedAccess): FirStatement
     }
 
     interface QualifiedAccessExpression: FrontendTransformer {
-      fun FirMetaContext.qualifiedAccessExpression(qualifiedAccessExpression: FirQualifiedAccessExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.qualifiedAccessExpression(qualifiedAccessExpression: FirQualifiedAccessExpression): FirStatement
     }
 
     interface RegularClass : FrontendTransformer {
-      fun FirMetaContext.regularClass(regularClass: FirRegularClass,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.regularClass(regularClass: FirRegularClass): FirStatement
     }
 
     interface ResolvedQualifier : FrontendTransformer {
-      fun FirMetaContext.resolvedQualifier(resolvedQualifier: FirResolvedQualifier,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.resolvedQualifier(resolvedQualifier: FirResolvedQualifier): FirStatement
     }
 
     interface ResolvedReifiedParameterReference: FrontendTransformer {
-      fun FirMetaContext.resolvedReifiedParameterReference(resolvedReifiedParameterReference: FirResolvedReifiedParameterReference,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.resolvedReifiedParameterReference(resolvedReifiedParameterReference: FirResolvedReifiedParameterReference): FirStatement
     }
 
     interface ResolvedTypeRef : FrontendTransformer {
-      fun FirMetaContext.resolvedTypeRef(resolvedTypeRef: FirResolvedTypeRef,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.resolvedTypeRef(resolvedTypeRef: FirResolvedTypeRef): FirTypeRef
     }
 
     interface ReturnExpression : FrontendTransformer {
-      fun FirMetaContext.returnExpression(returnExpression: FirReturnExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.returnExpression(returnExpression: FirReturnExpression): FirStatement
     }
 
     interface SafeCallExpression : FrontendTransformer {
-      fun FirMetaContext.safeCallExpression(safeCallExpression: FirSafeCallExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.safeCallExpression(safeCallExpression: FirSafeCallExpression): FirStatement
     }
 
     interface SimpleFunction : FrontendTransformer {
-      fun FirMetaContext.simpleFunction(simpleFunction: FirSimpleFunction,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.simpleFunction(simpleFunction: FirSimpleFunction): FirStatement
     }
 
     interface SmartCastExpression : FrontendTransformer {
-      fun FirMetaContext.smartCastExpression(smartCastExpression: FirSmartCastExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.smartCastExpression(smartCastExpression: FirSmartCastExpression): FirStatement
     }
 
     interface SpreadArgumentExpression: FrontendTransformer {
-      fun FirMetaContext.spreadArgumentExpression(spreadArgumentExpression: FirSpreadArgumentExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.spreadArgumentExpression(spreadArgumentExpression: FirSpreadArgumentExpression): FirStatement
     }
 
     interface Statement : FrontendTransformer {
-      fun FirMetaContext.statement(statement: FirStatement,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.statement(statement: FirStatement): FirStatement
     }
 
     interface StringConcatenationCall: FrontendTransformer {
-      fun FirMetaContext.stringConcatenationCall(stringConcatenationCall: FirStringConcatenationCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.stringConcatenationCall(stringConcatenationCall: FirStringConcatenationCall): FirStatement
     }
 
     interface ThisReceiverExpression: FrontendTransformer {
-      fun FirMetaContext.thisReceiverExpression(thisReceiverExpression: FirThisReceiverExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.thisReceiverExpression(thisReceiverExpression: FirThisReceiverExpression): FirStatement
     }
 
     interface ThrowExpression : FrontendTransformer {
-      fun FirMetaContext.throwExpression(throwExpression: FirThrowExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.throwExpression(throwExpression: FirThrowExpression): FirStatement
     }
 
     interface TryExpression : FrontendTransformer {
-      fun FirMetaContext.tryExpression(tryExpression: FirTryExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.tryExpression(tryExpression: FirTryExpression): FirStatement
     }
 
     interface TypeAlias : FrontendTransformer {
-      fun FirMetaContext.typeAlias(typeAlias: FirTypeAlias,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.typeAlias(typeAlias: FirTypeAlias): FirStatement
     }
 
     interface TypeOperatorCall : FrontendTransformer {
-      fun FirMetaContext.typeOperatorCall(typeOperatorCall: FirTypeOperatorCall,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.typeOperatorCall(typeOperatorCall: FirTypeOperatorCall): FirStatement
     }
 
     interface TypeParameter : FrontendTransformer {
-      fun FirMetaContext.typeParameter(typeParameter: FirTypeParameter,context: CheckerContext, reporter: DiagnosticReporter): FirTypeParameterRef
+      fun FirMetaCheckerContext.typeParameter(typeParameter: FirTypeParameter): FirTypeParameterRef
     }
 
     interface TypeRef : FrontendTransformer {
-      fun FirMetaContext.typeRef(typeRef: FirTypeRef,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.typeRef(typeRef: FirTypeRef): FirTypeRef
     }
 
     interface TypeRefWithNullability: FrontendTransformer {
-      fun FirMetaContext.typeRefWithNullability(typeRefWithNullability: FirTypeRefWithNullability,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.typeRefWithNullability(typeRefWithNullability: FirTypeRefWithNullability): FirTypeRef
     }
 
     interface UserTypeRef : FrontendTransformer {
-      fun FirMetaContext.userTypeRef(userTypeRef: FirUserTypeRef,context: CheckerContext, reporter: DiagnosticReporter): FirTypeRef
+      fun FirMetaCheckerContext.userTypeRef(userTypeRef: FirUserTypeRef): FirTypeRef
     }
 
     interface ValueParameter : FrontendTransformer {
-      fun FirMetaContext.valueParameter(valueParameter: FirValueParameter,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.valueParameter(valueParameter: FirValueParameter): FirStatement
     }
 
     interface VarargArgumentsExpression: FrontendTransformer {
-      fun FirMetaContext.varargArgumentsExpression(varargArgumentsExpression: FirVarargArgumentsExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.varargArgumentsExpression(varargArgumentsExpression: FirVarargArgumentsExpression): FirStatement
     }
 
     interface Variable : FrontendTransformer {
-      fun FirMetaContext.variable(variable: FirVariable,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.variable(variable: FirVariable): FirStatement
     }
 
     interface VariableAssignment : FrontendTransformer {
-      fun FirMetaContext.variableAssignment(variableAssignment: FirVariableAssignment,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.variableAssignment(variableAssignment: FirVariableAssignment): FirStatement
     }
 
     interface WhenExpression : FrontendTransformer {
-      fun FirMetaContext.whenExpression(whenExpression: FirWhenExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.whenExpression(whenExpression: FirWhenExpression): FirStatement
     }
 
     interface WhenSubjectExpression: FrontendTransformer {
-      fun FirMetaContext.whenSubjectExpression(whenSubjectExpression: FirWhenSubjectExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.whenSubjectExpression(whenSubjectExpression: FirWhenSubjectExpression): FirStatement
     }
 
     interface WhileLoop : FrontendTransformer {
-      fun FirMetaContext.whileLoop(whileLoop: FirWhileLoop,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.whileLoop(whileLoop: FirWhileLoop): FirStatement
     }
 
     interface WrappedArgumentExpression: FrontendTransformer {
-      fun FirMetaContext.wrappedArgumentExpression(wrappedArgumentExpression: FirWrappedArgumentExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.wrappedArgumentExpression(wrappedArgumentExpression: FirWrappedArgumentExpression): FirStatement
     }
 
     interface WrappedDelegateExpression: FrontendTransformer {
-      fun FirMetaContext.wrappedDelegateExpression(wrappedDelegateExpression: FirWrappedDelegateExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.wrappedDelegateExpression(wrappedDelegateExpression: FirWrappedDelegateExpression): FirStatement
     }
 
     interface WrappedExpression : FrontendTransformer {
-      fun FirMetaContext.wrappedExpression(wrappedExpression: FirWrappedExpression,context: CheckerContext, reporter: DiagnosticReporter): FirStatement
+      fun FirMetaCheckerContext.wrappedExpression(wrappedExpression: FirWrappedExpression): FirStatement
     }
   }
 
