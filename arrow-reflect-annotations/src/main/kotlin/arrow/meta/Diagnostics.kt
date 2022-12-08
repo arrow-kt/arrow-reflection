@@ -1,18 +1,17 @@
 package arrow.meta
 
-import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.rendering.BaseDiagnosticRendererFactory
 import org.jetbrains.kotlin.diagnostics.rendering.Renderer
 import org.jetbrains.kotlin.diagnostics.rendering.RootDiagnosticRendererFactory
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
-import org.jetbrains.kotlin.fir.renderWithType
+import org.jetbrains.kotlin.psi.KtElement
 
 abstract class Diagnostics(val head: KtDiagnosticFactory1<String>, vararg factories: KtDiagnosticFactory1<String>) : BaseDiagnosticRendererFactory() {
 
   interface Error {
-    fun error1(): DiagnosticFactory1DelegateProvider<String> = error1<PsiElement, String>()
+    fun error1(): DiagnosticFactory1DelegateProvider<String> = error1<KtElement, String>()
   }
 
   init {
@@ -34,7 +33,7 @@ abstract class Diagnostics(val head: KtDiagnosticFactory1<String>, vararg factor
     reporter.reportOn(
       source,
       factory,
-      renderWithType(),
+      msg,
       context,
       AbstractSourceElementPositioningStrategy.DEFAULT
     )

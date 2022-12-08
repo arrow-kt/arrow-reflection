@@ -1,10 +1,10 @@
 package arrow.reflect.compiler.plugin.targets
 
 import arrow.meta.FirMetaContext
-import arrow.meta.IrMetaContext
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
 import kotlin.reflect.full.allSuperclasses
+import kotlin.reflect.full.isSubclassOf
 
 data class MetaTarget(
   val annotation: KClass<*>,
@@ -22,7 +22,6 @@ data class MetaTarget(
       supertype: KClass<*>?,
       target: MetagenerationTarget,
       args: List<KClass<*>>,
-      returnType: KClass<*>,
       targets: List<MetaTarget>
     ): MetaTarget? =
       targets.find {
@@ -32,15 +31,19 @@ data class MetaTarget(
         }) &&
           it.method.name == methodName &&
           it.target == target &&
-          (it.args == listOf(FirMetaContext::class) + args ||
-            it.args == listOf(IrMetaContext::class) + args) &&
-          toKotlin(it.returnType) == returnType
+          (listOf(FirMetaContext::class) + args).subtypesOf(it.args)
+//          toKotlin(it.returnType) == returnType
       }
 
     private fun toKotlin(klass: KClass<*>): KClass<*> =
       when (klass) {
         Void::class -> Unit::class
         else -> klass
+      }
+
+    private fun List<KClass<*>>.subtypesOf(other : List<KClass<*>>): Boolean =
+      size == other.size && this.zip(other).all { (a, b) ->
+        a.isSubclassOf(b)
       }
   }
 

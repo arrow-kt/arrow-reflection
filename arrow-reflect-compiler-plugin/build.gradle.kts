@@ -37,7 +37,7 @@ sourceSets {
 dependencies {
   implementation(project(":arrow-reflect-annotations"))
   implementation(libs.classgraph)
-  compileOnly(libs.kotlin.compiler)
+  implementation(libs.kotlin.compiler)
 
   testCompileOnly(libs.kotlin.compiler)
   testImplementation(libs.kotlin.compiler)

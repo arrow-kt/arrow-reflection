@@ -4,8 +4,8 @@ import arrow.meta.FirMetaContext
 import arrow.meta.Meta
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.transformers.FirMetaTransformer
+import arrow.reflect.compiler.plugin.targets.MetaInvoke
 import arrow.reflect.compiler.plugin.targets.MetaTarget
-import arrow.reflect.compiler.plugin.targets.MetagenerationTarget
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.FirAnnotationContainer
 import org.jetbrains.kotlin.fir.FirElement
@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.fir.analysis.extensions.FirAdditionalCheckersExtensi
 import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.declarations.FirFile
 import org.jetbrains.kotlin.fir.expressions.*
-import org.jetbrains.kotlin.fir.renderWithType
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.name.FqName
@@ -33,30 +32,7 @@ class FirMetaAdditionalCheckersExtension(
 ) : FirAdditionalCheckersExtension(session) {
 
   val metaContext = FirMetaContext(templateCompiler, session)
-
-  private inline fun <reified In1, reified In2, reified In3, reified Out> invokeMeta(
-    annotations: List<FirAnnotation>,
-    superType: KClass<*>,
-    methodName: String,
-    arg: In1,
-    arg2: In2,
-    arg3: In3,
-  ): Out? {
-    val args = listOf(In1::class, In2::class, In3::class)
-    val retType = Out::class
-    return MetaTarget.find(
-      annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
-      methodName,
-      superType,
-      MetagenerationTarget.Fir,
-      args,
-      retType,
-      metaTargets
-    )?.let { target ->
-      val result = target.method.invoke(target.companion.objectInstance, metaContext, arg, arg2, arg3)
-      result as? Out
-    }
-  }
+  val invokeMeta = MetaInvoke(session, metaTargets, metaContext)
 
   override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
     override val basicDeclarationCheckers: Set<FirBasicDeclarationChecker> = setOf(
@@ -65,45 +41,20 @@ class FirMetaAdditionalCheckersExtension(
           templateCompiler.frontEndScopeCache.addDeclaration(context, declaration)
           invokeChecker(Meta.Checker.Declaration::class, declaration, session, context, reporter)
           if (!templateCompiler.compiling && declaration is FirFile) {
-            val transformer = FirMetaTransformer(session, templateCompiler, metaTargets, context)
-            val transformedDeclaration = transformer.transformDeclaration(declaration, Unit)
-            println(transformedDeclaration.renderWithType())
-            //transformedDeclaration.transformChildren(transformer, Unit)
+            val transformer = FirMetaTransformer(session, templateCompiler, metaTargets, context, reporter)
+            transformer.transformDeclaration(declaration, Unit)
           }
         }
       }
     )
   }
 
-  private val processedExpressions: MutableSet<FirStatement> = mutableSetOf()
-
   override val expressionCheckers: ExpressionCheckers = object : ExpressionCheckers() {
     override val basicExpressionCheckers: Set<FirBasicExpressionChecker> = setOf(
       object : FirBasicExpressionChecker() {
         override fun check(expression: FirStatement, context: CheckerContext, reporter: DiagnosticReporter) {
-          if (!templateCompiler.compiling && expression.isMetaAnnotated(session) && expression is FirFunctionCall && expression !in processedExpressions) {
-            processedExpressions.add(expression)
-           // val transformer = FirMetaTransformer(session, templateCompiler, metaTargets, context)
-           // val transformed = expression.transform<FirStatement, Unit>(transformer, Unit)
-           // println("transformed: ${transformed.renderWithType()}")
-          }
           templateCompiler.frontEndScopeCache.addElement(context, expression)
           invokeChecker(Meta.Checker.Expression::class, expression, session, context, reporter)
-//          if (expression is FirFunctionCall) {
-//            val declaration = context.containingDeclarations.firstIsInstanceOrNull<FirSimpleFunction>()
-//            if (declaration != null) {
-//              // invoke a potential expression transformation
-//              val annotations = expression.toResolvedCallableReference()?.resolvedSymbol?.fir?.metaAnnotations(session).orEmpty()
-//              invokeMeta<FirDeclaration, CheckerContext, DiagnosticReporter, Unit>(
-//                annotations,
-//                superType = Meta.Checker.Declaration::class,
-//                methodName = "check",
-//                declaration,
-//                arg2 = context,
-//                arg3 = reporter
-//              )
-//            }
-//          }
         }
       }
     )

@@ -6,12 +6,11 @@ import arrow.meta.Meta
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.checkers.isMetaAnnotated
 import arrow.reflect.compiler.plugin.fir.checkers.metaAnnotations
+import arrow.reflect.compiler.plugin.targets.MetaInvoke
 import arrow.reflect.compiler.plugin.targets.MetaTarget
-import arrow.reflect.compiler.plugin.targets.MetagenerationTarget
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
-import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
 import org.jetbrains.kotlin.fir.expressions.builder.buildConstExpression
 import org.jetbrains.kotlin.fir.expressions.impl.FirAnnotationArgumentMappingImpl
@@ -22,7 +21,6 @@ import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.resolve.constructType
 import org.jetbrains.kotlin.fir.resolve.defaultType
-import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeLookupTagBasedType
@@ -32,7 +30,6 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.ConstantValueKind
-import kotlin.reflect.KClass
 
 class FirMetaCodegenExtension(
   session: FirSession,
@@ -41,75 +38,7 @@ class FirMetaCodegenExtension(
 ) : FirDeclarationGenerationExtension(session) {
 
   val metaContext = FirMetaContext(templateCompiler, session)
-
-  private inline fun <reified Out> invokeMeta(
-    annotations: List<FirAnnotation>,
-    superType: KClass<*>,
-    methodName: String
-  ): Out? {
-    val args = emptyList<KClass<*>>()
-    val retType = Out::class
-    return MetaTarget.find(
-        annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
-        methodName,
-        superType,
-        MetagenerationTarget.Fir,
-        args,
-        retType,
-        metaTargets
-      )
-      ?.let { target ->
-        val result = target.method.invoke(target.companion.objectInstance, metaContext)
-        result as? Out
-      }
-  }
-
-  private inline fun <reified In, reified Out> invokeMeta(
-    annotations: List<FirAnnotation>,
-    superType: KClass<*>,
-    methodName: String,
-    arg: In
-  ): Out? {
-    val args = listOf(In::class)
-    val retType = Out::class
-    return MetaTarget.find(
-        annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
-        methodName,
-        superType,
-        MetagenerationTarget.Fir,
-        args,
-        retType,
-        metaTargets
-      )
-      ?.let { target ->
-        val result = target.method.invoke(target.companion.objectInstance, metaContext, arg)
-        result as? Out
-      }
-  }
-
-  private inline fun <reified In1, reified In2, reified Out> invokeMeta(
-    annotations: List<FirAnnotation>,
-    superType: KClass<*>,
-    methodName: String,
-    arg: In1,
-    arg2: In2
-  ): Out? {
-    val args = listOf(In1::class, In2::class)
-    val retType = Out::class
-    return MetaTarget.find(
-        annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
-        methodName,
-        superType,
-        MetagenerationTarget.Fir,
-        args,
-        retType,
-        metaTargets
-      )
-      ?.let { target ->
-        val result = target.method.invoke(target.companion.objectInstance, metaContext, arg, arg2)
-        result as? Out
-      }
-  }
+  val invokeMeta = MetaInvoke(session, metaTargets, metaContext)
 
   override fun generateClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*>? {
     val annotations =

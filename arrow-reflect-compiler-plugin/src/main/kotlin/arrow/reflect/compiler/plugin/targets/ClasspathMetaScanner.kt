@@ -1,6 +1,5 @@
 package arrow.reflect.compiler.plugin.targets
 
-import arrow.meta.IrMetaContext
 import arrow.meta.module.Module
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfoList
@@ -18,6 +17,8 @@ internal object ClasspathMetaScanner {
         Class.forName(it)
       } catch (e: ClassNotFoundException) {
         null
+      } catch (e: NoClassDefFoundError) {
+        null
       }
       val companion = klass?.declaredClasses?.firstOrNull()
       if (klass != null && companion != null) klass to companion
@@ -25,11 +26,7 @@ internal object ClasspathMetaScanner {
     }
     val targets = classesAndCompanions.flatMap { (klass, companion) ->
       companion.declaredMethods.map {
-        val target =
-          if (it.parameters.firstOrNull()?.type == IrMetaContext::class.java)
-            MetagenerationTarget.Ir
-          else
-            MetagenerationTarget.Fir
+        val target = MetagenerationTarget.Fir
         MetaTarget(
           klass.kotlin,
           target,

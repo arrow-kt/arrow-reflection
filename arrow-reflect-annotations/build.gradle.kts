@@ -48,4 +48,5 @@ sourceSets {
 
 dependencies {
   compileOnly(libs.kotlin.compiler)
+  kotlinCompilerPluginClasspath(libs.kotlin.compiler)
 }

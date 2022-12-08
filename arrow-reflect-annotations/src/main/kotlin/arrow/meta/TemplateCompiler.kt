@@ -1,14 +1,8 @@
 package arrow.meta
 
-//import org.jetbrains.kotlin.fir.session.FirSessionFactoryHelper
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.vfs.StandardFileSystems
-import com.intellij.openapi.vfs.VirtualFileManager
-import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
+import org.jetbrains.kotlin.KtIoFileSourceFile
+import org.jetbrains.kotlin.KtSourceFile
 import org.jetbrains.kotlin.backend.jvm.JvmIrDeserializerImpl
-import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
-import org.jetbrains.kotlin.cli.common.CommonCompilerPerformanceManager
-import org.jetbrains.kotlin.cli.common.checkKotlinPackageUsage
 import org.jetbrains.kotlin.cli.common.fir.FirDiagnosticsCompilerResultsReporter
 import org.jetbrains.kotlin.cli.common.messages.*
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
@@ -29,7 +23,8 @@ import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
 import org.jetbrains.kotlin.fir.expressions.builder.buildConstExpression
 import org.jetbrains.kotlin.fir.expressions.impl.FirAnnotationArgumentMappingImpl
-import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
+import org.jetbrains.kotlin.fir.lightTree.LightTree2Fir
+import org.jetbrains.kotlin.fir.pipeline.buildFirViaLightTree
 import org.jetbrains.kotlin.fir.pipeline.convertToIr
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.calls.ImplicitDispatchReceiverValue
@@ -50,7 +45,7 @@ import org.jetbrains.kotlin.fir.resolve.transformers.plugin.FirCompilerRequiredA
 import org.jetbrains.kotlin.fir.scopes.impl.FirLocalScope
 import org.jetbrains.kotlin.fir.scopes.impl.FirPackageMemberScope
 import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
-import org.jetbrains.kotlin.fir.session.environment.AbstractProjectEnvironment
+import org.jetbrains.kotlin.fir.session.sourcesToPathsMapper
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
@@ -60,19 +55,13 @@ import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
 import org.jetbrains.kotlin.incremental.createDirectory
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmIrMangler
-import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.modules.Module
-import org.jetbrains.kotlin.modules.TargetId
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.platform.TargetPlatform
-import org.jetbrains.kotlin.platform.isCommon
-import org.jetbrains.kotlin.platform.jvm.isJvm
-import org.jetbrains.kotlin.platform.konan.isNative
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtPsiFactory
+import org.jetbrains.kotlin.readSourceFileWithMapping
 import org.jetbrains.kotlin.types.ConstantValueKind
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
@@ -85,44 +74,16 @@ class FirResult(
 )
 
 class TemplateCompiler(
-  disposable: Disposable,
-  targetPlatform: TargetPlatform,
   val projectConfiguration: CompilerConfiguration,
   val frontEndScopeCache: FrontendScopeCache
 ) {
 
   private var counter = AtomicInteger(0)
 
-  private val projectEnvironment: AbstractProjectEnvironment
-  private val messageCollector: MessageCollector
-  val ktPsiFactory: KtPsiFactory
-  private val buildFile: File? = null
   private val chunk: List<Module>
   val templatesFolder = File(File("."), "/build/meta/templates")
 
   init {
-    val configFiles =
-      when {
-        targetPlatform.isJvm() -> EnvironmentConfigFiles.JVM_CONFIG_FILES
-        targetPlatform.isNative() -> EnvironmentConfigFiles.NATIVE_CONFIG_FILES
-        targetPlatform.isCommon() -> EnvironmentConfigFiles.METADATA_CONFIG_FILES
-        //targetPlatform.isJs() -> EnvironmentConfigFiles.JS_CONFIG_FILES
-        else -> error("Unsupported ${targetPlatform}")
-      }
-
-    val environment: KotlinCoreEnvironment = KotlinCoreEnvironment.createForProduction(
-      disposable, projectConfiguration, configFiles
-    )
-
-    messageCollector = environment.messageCollector
-
-    projectEnvironment =
-      VfsBasedProjectEnvironment(
-        environment.project,
-        VirtualFileManager.getInstance().getFileSystem(StandardFileSystems.FILE_PROTOCOL)
-      ) { environment.createPackagePartProvider(it) }
-
-    ktPsiFactory = KtPsiFactory(environment.project)
 
     if (!templatesFolder.exists()) templatesFolder.createDirectory()
     templatesFolder.deleteOnExit()
@@ -147,68 +108,32 @@ class TemplateCompiler(
   fun compileSource(
     source: String,
     extendedAnalysisMode: Boolean,
-    scopeDeclarations : List<FirDeclaration>,
+    scopeDeclarations: List<FirDeclaration>,
     produceIr: Boolean = false
   ): TemplateResult {
     compiling = true
     try {
-      val performanceManager = projectConfiguration.get(CLIConfigurationKeys.PERF_MANAGER)
-
-      val targetIds = projectConfiguration.get(JVMConfigurationKeys.MODULES)?.map(::TargetId)
-      val incrementalComponents = projectConfiguration.get(JVMConfigurationKeys.INCREMENTAL_COMPILATION_COMPONENTS)
-      val isMultiModuleChunk = chunk.size > 1
-
       val next = counter.incrementAndGet()
       val fileName = "meta.template_$next.kt"
       println("parsing source:\n$source")
-      val allSources = //additionalFiles.map { ktPsiFactory.createPhysicalFile(it.name, it.readText())}
-        listOfNotNull(
-          ktPsiFactory.createPhysicalFile(fileName, source)
+      println("session: ${session::class}")
+      val allSources =
+        listOf(
+          File(templatesFolder, fileName).also {
+            it.writeText(source)
+          }
         )
-
-      // TODO: run lowerings for all modules in the chunk, then run codegen for all modules.
       val outputs: ArrayList<FirResult> = arrayListOf()
       val irOutput: ArrayList<Fir2IrResult> = arrayListOf()
-      val project = (projectEnvironment as? VfsBasedProjectEnvironment)?.project
+      val messageCollector: MessageCollector = MessageCollector.NONE
       for (module in chunk) {
-        val moduleConfiguration = projectConfiguration.applyModuleProperties(module, buildFile)
+        val moduleConfiguration = projectConfiguration//.applyModuleProperties(module, buildFile)
         val context = CompilationContext(
-          module,
-          module.getSourceFiles(
-            allSources,
-            (projectEnvironment as? VfsBasedProjectEnvironment)?.localFileSystem,
-            isMultiModuleChunk,
-            buildFile
-          ),
-          projectEnvironment,
+          allSources,
           messageCollector,
-          moduleConfiguration.getBoolean(CLIConfigurationKeys.RENDER_DIAGNOSTIC_INTERNAL_NAME),
-          moduleConfiguration,
-          performanceManager,
-          targetIds,
-          incrementalComponents,
-          extendedAnalysisMode,
-          firExtensionRegistrars = project?.let { FirExtensionRegistrar.getInstances(it) } ?: emptyList(),
-          irGenerationExtensions = project?.let { IrGenerationExtension.getInstances(it) } ?: emptyList()
+          moduleConfiguration
         )
         val result = context.compileModule(scopeDeclarations)
-//      val scopedClassSymbol: FirClassSymbol<out FirClass>? = scopeDeclarations.firstIsInstanceOrNull<FirClass>()?.symbol
-//      if (result != null && scopedClassSymbol != null) {
-//        result.files.forEach { file ->
-//          file.transform<FirSimpleFunction, FirClassSymbol<*>>(
-//            object : FirTransformer<FirClassSymbol<*>>() {
-//              override fun <E : FirElement> transformElement(element: E, data: FirClassSymbol<*>): E {
-//                element.transformChildren(this, data)
-//                return if (element is FirSimpleFunction) {
-//                  patchFunction(data, element) as E
-//                } else {
-//                  element
-//                }
-//              }
-//            }
-//          , scopedClassSymbol)
-//        }
-//      }
 
         val templateResult = result ?: return TemplateResult(emptyList(), emptyList())
         outputs += templateResult
@@ -221,21 +146,15 @@ class TemplateCompiler(
       }
       return TemplateResult(outputs, irOutput)
     } finally {
-        compiling = false
+      compiling = false
     }
   }
 
   private fun CompilationContext.compileModule(scopeDeclarations: List<FirDeclaration>): FirResult? {
-    performanceManager?.notifyAnalysisStarted()
     ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
-
-    if (!checkKotlinPackageUsage(moduleConfiguration, allSources)) return null
-
-    val renderDiagnosticNames = moduleConfiguration.getBoolean(CLIConfigurationKeys.RENDER_DIAGNOSTIC_INTERNAL_NAME)
+    val renderDiagnosticNames = true
     val diagnosticsReporter = DiagnosticReporterFactory.createPendingReporter()
-    val firResult = runFrontend(allSources, diagnosticsReporter, scopeDeclarations).also {
-      performanceManager?.notifyAnalysisFinished()
-    }
+    val firResult = runFrontend(allSources, diagnosticsReporter, scopeDeclarations)
     if (firResult == null) {
       FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(
         diagnosticsReporter,
@@ -244,7 +163,6 @@ class TemplateCompiler(
       )
       return null
     }
-
     return firResult
   }
 
@@ -252,7 +170,7 @@ class TemplateCompiler(
     val fir2IrExtensions = JvmFir2IrExtensions(moduleConfiguration, JvmIrDeserializerImpl(), JvmIrMangler)
     val linkViaSignatures = moduleConfiguration.getBoolean(JVMConfigurationKeys.LINK_VIA_SIGNATURES)
     val scopeFiles = firResult.scopeDeclarations.filterIsInstance<FirFile>()
-    val files =  firResult.files + scopeFiles
+    val files = firResult.files + scopeFiles
     val fir2IrResult = firResult.session.convertToIr(
       firResult.scopeSession, files, fir2IrExtensions, emptyList(), linkViaSignatures
     )
@@ -260,84 +178,29 @@ class TemplateCompiler(
     return fir2IrResult
   }
 
-  private val fromTemplateAnnotationClassId: ClassId
-    get() = ClassId.fromString(FromTemplate::class.java.canonicalName.replace(".", "/"))
-
-  private val fromTemplateClassLikeSymbol: FirClassLikeSymbol<*>
-    get() =
-      checkNotNull(
-        session.symbolProvider.getClassLikeSymbolByClassId(fromTemplateAnnotationClassId)
-      ) {
-        // TODO: rename this artifact if it is wrong before publishing the final release
-        "@CompileTime annotation is missing, add io.arrow-kt.arrow-inject-annotations"
-      }
-
-  @OptIn(SymbolInternals::class)
-  private val fromTemplateAnnotationType: ConeLookupTagBasedType
-    get() = fromTemplateClassLikeSymbol.fir.symbol.constructType(emptyArray(), false)
-
-  @OptIn(SymbolInternals::class)
-  fun patchFunction(owner: FirClassSymbol<*>, simpleFunction: FirSimpleFunction): FirSimpleFunction {
-    val callableId = CallableId(owner.classId, simpleFunction.name)
-    return buildSimpleFunctionCopy(simpleFunction) {
-      annotations += buildAnnotation {
-        annotationTypeRef = buildResolvedTypeRef { type = fromTemplateAnnotationType }
-        argumentMapping =
-          FirAnnotationArgumentMappingImpl(
-            null,
-            mapOf(
-              Name.identifier("parent") to
-                buildConstExpression(
-                  null,
-                  ConstantValueKind.String,
-                  callableId.classId?.asString() ?: error("expected class name in callable"),
-                  mutableListOf(),
-                  true
-                )
-            )
-          )
-      }
-      symbol =
-        FirNamedFunctionSymbol(callableId).also {
-          // it.bind(simpleFunction)
-        }
-      dispatchReceiverType = owner.fir.defaultType()
-    }
-  }
-
-  private fun CompilationContext.runFrontend(
-    ktFiles: List<KtFile>,
+  private fun runFrontend(
+    files: List<File>,
     diagnosticsReporter: BaseDiagnosticsCollector,
     scopeDeclarations: List<FirDeclaration>,
   ): FirResult? {
-    val syntaxErrors = ktFiles.fold(false) { errorsFound, ktFile ->
-      AnalyzerWithCompilerReport.reportSyntaxErrors(ktFile, messageCollector).isHasErrors or errorsFound
-    }
+    val syntaxErrors = false
     val scope = ScopeSession()
-    val rawFir = session.buildFirFromKtFiles(ktFiles)
-
+    val rawFir = session.buildFirViaLightTree(files.map { KtIoFileSourceFile(it) }) // ,.buildFirFromKtFiles(ktFiles)
     val (scopeSession, fir) = session.runResolution(rawFir, scope, scopeDeclarations)
-//    val declarationCheckers = session.checkersComponent.declarationCheckers.basicDeclarationCheckers as? MutableSet<FirBasicDeclarationChecker>
-//    val metaDeclarationChecker = declarationCheckers?.firstOrNull { it.toString().startsWith("arrow.reflect.compiler.plugin.fir.checkers.FirMetaAdditionalCheckersExtension") == true }
-//    declarationCheckers?.removeIf { it == metaDeclarationChecker }
-//
-//    val expressionCheckers = session.checkersComponent.expressionCheckers.basicExpressionCheckers as? MutableSet<FirBasicExpressionChecker>
-//    val metaExpressionChecker = expressionCheckers?.firstOrNull { it.toString().startsWith("arrow.reflect.compiler.plugin.fir.checkers.FirMetaAdditionalCheckersExtension") == true }
-//    expressionCheckers?.removeIf { it == metaExpressionChecker }
-
     session.runCheckers(scopeSession, fir, diagnosticsReporter)
-//    metaDeclarationChecker?.let { declarationCheckers.add(it) }
-//    metaExpressionChecker?.let { expressionCheckers.add(it) }
-    //TODO recursive loop here when invoked from Fir transformer meta dispatching
-    // look for a safer place where to place transformer where running the checkers
-    // from here is observed on the receiver and it does go through the extensions
-    // of the current session
-
-    return if (syntaxErrors || diagnosticsReporter.hasErrors) null else FirResult(session, scopeSession, fir, scopeDeclarations)
-    //return if (syntaxErrors) null else FirResult(session, scopeSession, fir)
+    return if (syntaxErrors || diagnosticsReporter.hasErrors) null else FirResult(
+      session,
+      scopeSession,
+      fir,
+      scopeDeclarations
+    )
   }
 
-  fun FirSession.runResolution(firFiles: List<FirFile>, scopeSession: ScopeSession, scopeDeclarations: List<FirDeclaration>): Pair<ScopeSession, List<FirFile>> {
+  fun FirSession.runResolution(
+    firFiles: List<FirFile>,
+    scopeSession: ScopeSession,
+    scopeDeclarations: List<FirDeclaration>
+  ): Pair<ScopeSession, List<FirFile>> {
     val resolveProcessor = FirTotalResolveProcessor(this, scopeSession, scopeDeclarations)
     resolveProcessor.process(firFiles)
     return resolveProcessor.scopeSession to firFiles
@@ -350,7 +213,11 @@ class TemplateCompiler(
     }
   }
 
-  class FirTotalResolveProcessor(session: FirSession, val scopeSession: ScopeSession, scopeDeclarations: List<FirDeclaration>) {
+  class FirTotalResolveProcessor(
+    session: FirSession,
+    val scopeSession: ScopeSession,
+    scopeDeclarations: List<FirDeclaration>
+  ) {
 
     private val processors: List<FirResolveProcessor> = createAllCompilerResolveProcessors(
       session,
@@ -367,6 +234,7 @@ class TemplateCompiler(
               processor.processFile(file)
             }
           }
+
           is FirGlobalResolveProcessor -> {
             processor.process(files)
           }
@@ -376,29 +244,46 @@ class TemplateCompiler(
     }
   }
 
+  fun FirSession.buildFirViaLightTree(
+    files: Collection<KtSourceFile>,
+    diagnosticsReporter: DiagnosticReporter? = null,
+    reportFilesAndLines: ((Int, Int) -> Unit)? = null
+  ): List<FirFile> {
+    val firProvider = (firProvider as? FirProviderImpl)
+    val sourcesToPathsMapper = sourcesToPathsMapper
+    val builder = LightTree2Fir(this, kotlinScopeProvider, diagnosticsReporter)
+    val shouldCountLines = (reportFilesAndLines != null)
+    var linesCount = 0
+    val firFiles = files.map { file ->
+      val (code, linesMapping) = file.getContentsAsStream().reader(Charsets.UTF_8).use {
+        it.readSourceFileWithMapping()
+      }
+      if (shouldCountLines) {
+        linesCount += linesMapping.lastOffset
+      }
+      builder.buildFirFile(code, file, linesMapping).also { firFile ->
+        firProvider?.recordFile(firFile)
+        sourcesToPathsMapper.registerFileSource(firFile.source!!, file.path ?: file.name)
+      }
+    }
+    reportFilesAndLines?.invoke(files.count(), linesCount)
+    return firFiles
+  }
+
   fun FirSession.buildFirFromKtFiles(ktFiles: Collection<KtFile>): List<FirFile> {
-    val firProvider = (firProvider as FirProviderImpl)
+    val firProvider = (firProvider as? FirProviderImpl)
     val builder = RawFirBuilder(this, kotlinScopeProvider, BodyBuildingMode.NORMAL)
     return ktFiles.map {
       builder.buildFirFile(it).also { firFile ->
-        firProvider.recordFile(firFile)
+        firProvider?.recordFile(firFile)
       }
     }
   }
 
   private class CompilationContext(
-    val module: Module,
-    val allSources: List<KtFile>,
-    val projectEnvironment: AbstractProjectEnvironment,
+    val allSources: List<File>,
     val messageCollector: MessageCollector,
-    val renderDiagnosticName: Boolean,
-    val moduleConfiguration: CompilerConfiguration,
-    val performanceManager: CommonCompilerPerformanceManager?,
-    val targetIds: List<TargetId>?,
-    val incrementalComponents: IncrementalCompilationComponents?,
-    val extendedAnalysisMode: Boolean,
-    val firExtensionRegistrars: List<FirExtensionRegistrar>,
-    val irGenerationExtensions: Collection<IrGenerationExtension>
+    val moduleConfiguration: CompilerConfiguration
   )
 }
 
@@ -431,7 +316,11 @@ fun FirResolvePhase.createCompilerProcessorByPhase(
 ): FirResolveProcessor {
   return when (this) {
     FirResolvePhase.RAW_FIR -> throw IllegalArgumentException("Raw FIR building phase does not have a transformer")
-    FirResolvePhase.COMPILER_REQUIRED_ANNOTATIONS -> FirCompilerRequiredAnnotationsResolveProcessor(session, scopeSession)
+    FirResolvePhase.COMPILER_REQUIRED_ANNOTATIONS -> FirCompilerRequiredAnnotationsResolveProcessor(
+      session,
+      scopeSession
+    )
+
     FirResolvePhase.COMPANION_GENERATION -> FirCompanionGenerationProcessor(session, scopeSession)
     FirResolvePhase.IMPORTS -> FirImportResolveProcessor(session, scopeSession)
     FirResolvePhase.SUPER_TYPES -> FirSupertypeResolverProcessor(session, scopeSession)
@@ -448,12 +337,20 @@ fun FirResolvePhase.createCompilerProcessorByPhase(
 }
 
 @OptIn(AdapterForResolveProcessor::class)
-class FirBodyResolveProcessor(session: FirSession, scopeSession: ScopeSession, scopeDeclarations: List<FirDeclaration>) : FirTransformerBasedResolveProcessor(session, scopeSession) {
+class FirBodyResolveProcessor(
+  session: FirSession,
+  scopeSession: ScopeSession,
+  scopeDeclarations: List<FirDeclaration>
+) : FirTransformerBasedResolveProcessor(session, scopeSession) {
   override val transformer = FirBodyResolveTransformerAdapter(session, scopeSession, scopeDeclarations)
 }
 
 @AdapterForResolveProcessor
-class FirBodyResolveTransformerAdapter(session: FirSession, scopeSession: ScopeSession, scopeDeclarations: List<FirDeclaration>) : FirTransformer<Any?>() {
+class FirBodyResolveTransformerAdapter(
+  session: FirSession,
+  scopeSession: ScopeSession,
+  scopeDeclarations: List<FirDeclaration>
+) : FirTransformer<Any?>() {
   @OptIn(PrivateForInline::class)
   private val transformer = FirBodyResolveTransformer(
     session,
@@ -473,11 +370,13 @@ class FirBodyResolveTransformerAdapter(session: FirSession, scopeSession: ScopeS
           ctx.addReceiver(null, ImplicitDispatchReceiverValue(analysisContext.symbol, session, scopeSession))
           //ctx.addInaccessibleImplicitReceiverValue(analysisContext, SessionHolderImpl(session, scopeSession))
         }
+
         is FirFile -> {
           val filePackageScope = FirPackageMemberScope(analysisContext.packageFqName, session)
           ctx.addNonLocalTowerDataElement(filePackageScope.asTowerDataElement(false))
           //ctx.addLocalScope(FirLocalScope(session))
         }
+
         else -> {
           val localScope = FirLocalScope(session)
           ctx.addLocalScope(localScope)
