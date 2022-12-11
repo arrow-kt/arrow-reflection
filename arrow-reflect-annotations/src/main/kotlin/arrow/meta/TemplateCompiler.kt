@@ -359,7 +359,7 @@ class FirBodyResolveTransformerAdapter(
     scopeSession = scopeSession,
     outerBodyResolveContext = BodyResolveContext(
       ReturnTypeCalculatorForFullBodyResolve,
-      DataFlowAnalyzerContext.empty(session),
+      DataFlowAnalyzerContext(session),
       scopeDeclarations.filterIsInstance<FirClassLikeDeclaration>().toSet()
     )
   ).also { bodyResolveTransformer ->

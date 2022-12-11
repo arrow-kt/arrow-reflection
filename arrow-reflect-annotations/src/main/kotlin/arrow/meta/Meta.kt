@@ -45,18 +45,19 @@ annotation class Meta {
         )
       ) == true
 
-    @OptIn(SymbolInternals::class)
     private fun FirMetaContext.decoratedCall(
       newElement: FirFunctionCall
     ): FirCall {
       val args = newElement.arguments
       val argsApplied = args.mapIndexed { n, expr -> "args[$n] as ${+expr.typeRef}" }
       val name = newElement.toResolvedCallableSymbol()?.callableId?.asSingleFqName()?.asString()
-      //language=kotlin
-      return """
+
+      return compile(
+        """
              import ${annotation.java.canonicalName}
              val x = ${annotation.java.simpleName}.intercept(listOf(${+args})) { args: List<Any?> -> ${name}(${+argsApplied}) }
-             """()
+             """
+      )
     }
 
   }
@@ -144,7 +145,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.annotationCall(annotationCall: FirAnnotationCall): FirStatement
     }
 
-    interface AnnotationContainer: FrontendTransformer {
+    interface AnnotationContainer : FrontendTransformer {
       fun FirMetaCheckerContext.annotationContainer(annotationContainer: FirAnnotationContainer): FirAnnotationContainer
     }
 
@@ -152,11 +153,11 @@ annotation class Meta {
       fun FirMetaCheckerContext.anonymousFunction(anonymousFunction: FirAnonymousFunction): FirStatement
     }
 
-    interface AnonymousFunctionExpression: FrontendTransformer {
+    interface AnonymousFunctionExpression : FrontendTransformer {
       fun FirMetaCheckerContext.anonymousFunctionExpression(anonymousFunctionExpression: FirAnonymousFunctionExpression): FirStatement
     }
 
-    interface AnonymousInitializer: FrontendTransformer {
+    interface AnonymousInitializer : FrontendTransformer {
       fun FirMetaCheckerContext.anonymousInitializer(anonymousInitializer: FirAnonymousInitializer): FirAnonymousInitializer
     }
 
@@ -164,7 +165,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.anonymousObject(anonymousObject: FirAnonymousObject): FirStatement
     }
 
-    interface AnonymousObjectExpression: FrontendTransformer {
+    interface AnonymousObjectExpression : FrontendTransformer {
       fun FirMetaCheckerContext.anonymousObjectExpression(anonymousObjectExpression: FirAnonymousObjectExpression): FirStatement
     }
 
@@ -172,11 +173,11 @@ annotation class Meta {
       fun FirMetaCheckerContext.arrayOfCall(arrayOfCall: FirArrayOfCall): FirStatement
     }
 
-    interface AssignmentOperatorStatement: FrontendTransformer {
+    interface AssignmentOperatorStatement : FrontendTransformer {
       fun FirMetaCheckerContext.assignmentOperatorStatement(assignmentOperatorStatement: FirAssignmentOperatorStatement): FirStatement
     }
 
-    interface AugmentedArraySetCall: FrontendTransformer {
+    interface AugmentedArraySetCall : FrontendTransformer {
       fun FirMetaCheckerContext.augmentedArraySetCall(augmentedArraySetCall: FirAugmentedArraySetCall): FirStatement
     }
 
@@ -184,7 +185,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.backingField(backingField: FirBackingField): FirStatement
     }
 
-    interface BinaryLogicExpression: FrontendTransformer {
+    interface BinaryLogicExpression : FrontendTransformer {
       fun FirMetaCheckerContext.binaryLogicExpression(binaryLogicExpression: FirBinaryLogicExpression): FirStatement
     }
 
@@ -200,11 +201,11 @@ annotation class Meta {
       fun FirMetaCheckerContext.call(call: FirCall): FirStatement
     }
 
-    interface CallableDeclaration: FrontendTransformer {
+    interface CallableDeclaration : FrontendTransformer {
       fun FirMetaCheckerContext.callableDeclaration(callableDeclaration: FirCallableDeclaration): FirCallableDeclaration
     }
 
-    interface CallableReferenceAccess: FrontendTransformer {
+    interface CallableReferenceAccess : FrontendTransformer {
       fun FirMetaCheckerContext.callableReferenceAccess(callableReferenceAccess: FirCallableReferenceAccess): FirStatement
     }
 
@@ -212,7 +213,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.checkNotNullCall(checkNotNullCall: FirCheckNotNullCall): FirStatement
     }
 
-    interface CheckedSafeCallSubject: FrontendTransformer {
+    interface CheckedSafeCallSubject : FrontendTransformer {
       fun FirMetaCheckerContext.checkedSafeCallSubject(checkedSafeCallSubject: FirCheckedSafeCallSubject): FirStatement
     }
 
@@ -220,15 +221,15 @@ annotation class Meta {
       fun FirMetaCheckerContext.regularClass(firClass: FirRegularClass): FirStatement
     }
 
-    interface ClassLikeDeclaration: FrontendTransformer {
+    interface ClassLikeDeclaration : FrontendTransformer {
       fun FirMetaCheckerContext.classLikeDeclaration(classLikeDeclaration: FirClassLikeDeclaration): FirStatement
     }
 
-    interface ClassReferenceExpression: FrontendTransformer {
+    interface ClassReferenceExpression : FrontendTransformer {
       fun FirMetaCheckerContext.classReferenceExpression(classReferenceExpression: FirClassReferenceExpression): FirStatement
     }
 
-    interface ComparisonExpression: FrontendTransformer {
+    interface ComparisonExpression : FrontendTransformer {
       fun FirMetaCheckerContext.comparisonExpression(comparisonExpression: FirComparisonExpression): FirStatement
     }
 
@@ -244,7 +245,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.constructor(constructor: FirConstructor): FirStatement
     }
 
-    interface DelegatedConstructorCall: FrontendTransformer {
+    interface DelegatedConstructorCall : FrontendTransformer {
       fun FirMetaCheckerContext.delegatedConstructorCall(delegatedConstructorCall: FirDelegatedConstructorCall): FirStatement
     }
 
@@ -264,7 +265,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.enumEntry(enumEntry: FirEnumEntry): FirStatement
     }
 
-    interface EqualityOperatorCall: FrontendTransformer {
+    interface EqualityOperatorCall : FrontendTransformer {
       fun FirMetaCheckerContext.equalityOperatorCall(equalityOperatorCall: FirEqualityOperatorCall): FirStatement
     }
 
@@ -288,7 +289,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.errorProperty(errorProperty: FirErrorProperty): FirStatement
     }
 
-    interface ErrorResolvedQualifier: FrontendTransformer {
+    interface ErrorResolvedQualifier : FrontendTransformer {
       fun FirMetaCheckerContext.errorResolvedQualifier(errorResolvedQualifier: FirErrorResolvedQualifier): FirStatement
     }
 
@@ -332,7 +333,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.implicitTypeRef(implicitTypeRef: FirImplicitTypeRef): FirTypeRef
     }
 
-    interface IntegerLiteralOperatorCall: FrontendTransformer {
+    interface IntegerLiteralOperatorCall : FrontendTransformer {
       fun FirMetaCheckerContext.integerLiteralOperatorCall(integerLiteralOperatorCall: FirIntegerLiteralOperatorCall): FirStatement
     }
 
@@ -348,7 +349,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.label(label: FirLabel): FirLabel
     }
 
-    interface LambdaArgumentExpression: FrontendTransformer {
+    interface LambdaArgumentExpression : FrontendTransformer {
       fun FirMetaCheckerContext.lambdaArgumentExpression(lambdaArgumentExpression: FirLambdaArgumentExpression): FirStatement
     }
 
@@ -364,7 +365,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.memberDeclaration(memberDeclaration: FirMemberDeclaration): FirMemberDeclaration
     }
 
-    interface NamedArgumentExpression: FrontendTransformer {
+    interface NamedArgumentExpression : FrontendTransformer {
       fun FirMetaCheckerContext.namedArgumentExpression(namedArgumentExpression: FirNamedArgumentExpression): FirStatement
     }
 
@@ -372,7 +373,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.property(property: FirProperty): FirStatement
     }
 
-    interface PropertyAccessExpression: FrontendTransformer {
+    interface PropertyAccessExpression : FrontendTransformer {
       fun FirMetaCheckerContext.propertyAccessExpression(propertyAccessExpression: FirPropertyAccessExpression): FirStatement
     }
 
@@ -384,7 +385,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.qualifiedAccess(qualifiedAccess: FirQualifiedAccess): FirStatement
     }
 
-    interface QualifiedAccessExpression: FrontendTransformer {
+    interface QualifiedAccessExpression : FrontendTransformer {
       fun FirMetaCheckerContext.qualifiedAccessExpression(qualifiedAccessExpression: FirQualifiedAccessExpression): FirStatement
     }
 
@@ -396,7 +397,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.resolvedQualifier(resolvedQualifier: FirResolvedQualifier): FirStatement
     }
 
-    interface ResolvedReifiedParameterReference: FrontendTransformer {
+    interface ResolvedReifiedParameterReference : FrontendTransformer {
       fun FirMetaCheckerContext.resolvedReifiedParameterReference(resolvedReifiedParameterReference: FirResolvedReifiedParameterReference): FirStatement
     }
 
@@ -420,7 +421,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.smartCastExpression(smartCastExpression: FirSmartCastExpression): FirStatement
     }
 
-    interface SpreadArgumentExpression: FrontendTransformer {
+    interface SpreadArgumentExpression : FrontendTransformer {
       fun FirMetaCheckerContext.spreadArgumentExpression(spreadArgumentExpression: FirSpreadArgumentExpression): FirStatement
     }
 
@@ -428,11 +429,11 @@ annotation class Meta {
       fun FirMetaCheckerContext.statement(statement: FirStatement): FirStatement
     }
 
-    interface StringConcatenationCall: FrontendTransformer {
+    interface StringConcatenationCall : FrontendTransformer {
       fun FirMetaCheckerContext.stringConcatenationCall(stringConcatenationCall: FirStringConcatenationCall): FirStatement
     }
 
-    interface ThisReceiverExpression: FrontendTransformer {
+    interface ThisReceiverExpression : FrontendTransformer {
       fun FirMetaCheckerContext.thisReceiverExpression(thisReceiverExpression: FirThisReceiverExpression): FirStatement
     }
 
@@ -460,7 +461,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.typeRef(typeRef: FirTypeRef): FirTypeRef
     }
 
-    interface TypeRefWithNullability: FrontendTransformer {
+    interface TypeRefWithNullability : FrontendTransformer {
       fun FirMetaCheckerContext.typeRefWithNullability(typeRefWithNullability: FirTypeRefWithNullability): FirTypeRef
     }
 
@@ -472,7 +473,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.valueParameter(valueParameter: FirValueParameter): FirStatement
     }
 
-    interface VarargArgumentsExpression: FrontendTransformer {
+    interface VarargArgumentsExpression : FrontendTransformer {
       fun FirMetaCheckerContext.varargArgumentsExpression(varargArgumentsExpression: FirVarargArgumentsExpression): FirStatement
     }
 
@@ -488,7 +489,7 @@ annotation class Meta {
       fun FirMetaCheckerContext.whenExpression(whenExpression: FirWhenExpression): FirStatement
     }
 
-    interface WhenSubjectExpression: FrontendTransformer {
+    interface WhenSubjectExpression : FrontendTransformer {
       fun FirMetaCheckerContext.whenSubjectExpression(whenSubjectExpression: FirWhenSubjectExpression): FirStatement
     }
 
@@ -496,11 +497,11 @@ annotation class Meta {
       fun FirMetaCheckerContext.whileLoop(whileLoop: FirWhileLoop): FirStatement
     }
 
-    interface WrappedArgumentExpression: FrontendTransformer {
+    interface WrappedArgumentExpression : FrontendTransformer {
       fun FirMetaCheckerContext.wrappedArgumentExpression(wrappedArgumentExpression: FirWrappedArgumentExpression): FirStatement
     }
 
-    interface WrappedDelegateExpression: FrontendTransformer {
+    interface WrappedDelegateExpression : FrontendTransformer {
       fun FirMetaCheckerContext.wrappedDelegateExpression(wrappedDelegateExpression: FirWrappedDelegateExpression): FirStatement
     }
 

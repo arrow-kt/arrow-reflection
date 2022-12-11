@@ -1,5 +1,6 @@
 package arrow.meta
 
+import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
@@ -81,12 +82,14 @@ abstract class FirMetaContext(
 
   val String.call: FirCall
     get() =
-      """
-      val x = $this
-      """()
+      compile(
+        """
+            val x = $this
+            """
+      )
 
-  inline operator fun <reified Fir : FirElement> String.invoke(): Fir {
-    val results = templateCompiler.compileSource(this, extendedAnalysisMode = false, scopeDeclarations)
+  inline fun <reified Fir : FirElement> compile(@Language("kotlin") source: String): Fir {
+    val results = templateCompiler.compileSource(source, extendedAnalysisMode = false, scopeDeclarations)
     val firFiles = results.firResults.flatMap { it.files }
     val currentElement: Fir? = findSelectedFirElement(Fir::class, firFiles)
     return currentElement ?: error("Could not find a ${Fir::class}")
