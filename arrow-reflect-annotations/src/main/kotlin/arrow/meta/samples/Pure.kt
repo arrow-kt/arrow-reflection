@@ -36,7 +36,8 @@ annotation class Pure {
       declaration: FirDeclaration,
     ) {
       if (declaration is FirSimpleFunction) {
-        val callGraph = createCallGraph(declaration)
+        val callGraph =
+          createCallGraph(declaration, ProcessingCache(mutableSetOf(), mutableSetOf(), mutableSetOf(), mutableSetOf()))
         println(callGraph.render())
         callGraph.calls.forEach {
           declaration.report(PureErrors.CallGraphIncludesIO, "Detected unsafe call to ${it}")
@@ -49,16 +50,21 @@ annotation class Pure {
 }
 
 sealed class AnalyzedFunction {
-  abstract val name: String
+  abstract val renderName: String
   abstract val calls: Set<AnalyzedFunction>
 }
 
+data class RecursiveCall(val value: FirSimpleFunction) : AnalyzedFunction() {
+  override val renderName: String = "[Recursive] ${value.symbol.callableId.asSingleFqName().asString()}"
+  override val calls: Set<AnalyzedFunction> = emptySet()
+}
+
 data class LocalFunction(val value: FirSimpleFunction, override val calls: Set<AnalyzedFunction>) : AnalyzedFunction() {
-  override val name: String = value.name.asString()
+  override val renderName: String = "[Local] ${value.symbol.callableId.asSingleFqName().asString()}"
 }
 
 data class RemoteFunction(val method: Method, override val calls: Set<RemoteFunction>) : AnalyzedFunction() {
-  override val name: String = method.name
+  override val renderName: String = "[Binaries] ${method.declaringClass.canonicalName + "." + method.name}"
 }
 
 fun AnalyzedFunction.render(indentation: String = "", isLastChild: Boolean = true): String {
@@ -67,15 +73,35 @@ fun AnalyzedFunction.render(indentation: String = "", isLastChild: Boolean = tru
     it.render(childIndentation, it == this@render.calls.last())
   }
   val connector = if (isLastChild) "└" else "├"
-  return "$indentation$connector── $name\n$children"
+  return "$indentation$connector── $renderName\n$children"
 }
 
-// Define a class representing a call graph
-//data class CallGraph(val parent: CallGraph?, val function: AnalyzedFunction, val calls: Set<CallGraph>)
+class ProcessingCache(
+  val processingMethods: MutableSet<Method>,
+  val processingFirFunctions: MutableSet<FirSimpleFunction>,
+  val processedLocals: MutableSet<LocalFunction>,
+  val processedRemote: MutableSet<RemoteFunction>
+) {
+  fun add(analyzedFunction: AnalyzedFunction) {
+    when (analyzedFunction) {
+      is LocalFunction -> processedLocals.add(analyzedFunction)
+      is RemoteFunction -> processedRemote.add(analyzedFunction)
+      is RecursiveCall -> {}
+    }
+  }
+
+  fun localFunction(fn: FirSimpleFunction): LocalFunction? =
+    processedLocals.firstOrNull { it.value == fn }
+
+  fun remoteFunction(fn: Method): RemoteFunction? =
+    processedRemote.firstOrNull { it.method == fn }
+}
 
 // Define a function to create a call graph
-@OptIn(SymbolInternals::class)
-fun FirMetaCheckerContext.createCallGraph(function: FirSimpleFunction): AnalyzedFunction {
+fun FirMetaCheckerContext.createCallGraph(
+  function: FirSimpleFunction,
+  cache: ProcessingCache
+): AnalyzedFunction {
   return if (function.origin == FirDeclarationOrigin.Library) {
     val classId = (function.containerSource as? JvmPackagePartSource)?.knownJvmBinaryClass?.classId
     val callableId = function.symbol.callableId
@@ -92,21 +118,26 @@ fun FirMetaCheckerContext.createCallGraph(function: FirSimpleFunction): Analyzed
       it.name == function.name.asString() && allParamsInOriginalFunction
     }
     if (foundMethod != null) {
-      createLibraryCallGraph(foundMethod)
+      createLibraryCallGraph(foundMethod, cache)
     } else LocalFunction(function, emptySet())
   } else {
-    createLocalCallGraph(function)
+    createLocalCallGraph2(function, cache)
   }
 }
 
 private fun FirMetaCheckerContext.createLibraryCallGraph(
-  function: Method, calls: MutableSet<RemoteFunction> = mutableSetOf()
+  function: Method, cache: ProcessingCache
 ): RemoteFunction {
-  val methods = calledMethods(function)
-  val childGraphs = methods.map { method ->
-    createLibraryCallGraph(method, calls)
-  }
-  return RemoteFunction(function, childGraphs.toSet())
+  val existingReference = cache.remoteFunction(function)
+  return if (existingReference == null) {
+    val methods = calledMethods(function)
+    val childGraphs = methods.map { method ->
+      createLibraryCallGraph(method, cache)
+    }
+    RemoteFunction(function, childGraphs.toSet()).also {
+      cache.processedRemote.add(it)
+    }
+  } else existingReference
 }
 
 
@@ -130,6 +161,30 @@ class MethodCallGraphVisitor : MethodVisitor(Opcodes.ASM9) {
     calledFunction?.let { calledMethods.add(it) }
   }
 }
+
+@OptIn(SymbolInternals::class)
+fun calledMethods(function: FirSimpleFunction): Set<FirSimpleFunction> {
+  val calledMethods = mutableSetOf<FirSimpleFunction>()
+  val visitor = object : FirVisitorVoid() {
+    override fun visitElement(element: FirElement) {
+      element.acceptChildren(this)
+    }
+
+    override fun visitFunctionCall(functionCall: FirFunctionCall) {
+      // If the current element is a function call, add it to the list of vertices
+
+      // Look up the callee reference element for the function call
+      val callee = functionCall.calleeReference.resolvedSymbol?.fir
+      if (callee is FirSimpleFunction) {
+        calledMethods.add(callee)
+      }
+    }
+  }
+  function.accept(visitor)
+
+  return calledMethods
+}
+
 
 fun calledMethods(method: Method): Set<Method> {
   // Get the bytecode of the method
@@ -161,38 +216,64 @@ fun calledMethods(method: Method): Set<Method> {
   return methodVisitor.calledMethods
 }
 
-@OptIn(SymbolInternals::class)
-private fun FirMetaCheckerContext.createLocalCallGraph(function: FirSimpleFunction): AnalyzedFunction {
-  // Define a list to hold the vertices (function calls) in the call graph
-  val vertices = mutableSetOf<AnalyzedFunction>()
-
-  // Create a visitor to traverse the children elements of the input function
-  val visitor = object : FirVisitorVoid() {
-    override fun visitElement(element: FirElement) {
-      element.acceptChildren(this)
+private fun FirMetaCheckerContext.createLocalCallGraph2(
+  function: FirSimpleFunction, cache: ProcessingCache
+): LocalFunction {
+  val existingReference = cache.localFunction(function)
+  return if (existingReference == null) {
+    val functions = calledMethods(function)
+    val childGraphs = functions.mapNotNull { firFunction ->
+      if (firFunction !in cache.processingFirFunctions) {
+        cache.processingFirFunctions.add(firFunction)
+        createCallGraph(firFunction, cache)
+      } else cache.localFunction(firFunction) ?: RecursiveCall(firFunction) //recursive ends here
     }
+    LocalFunction(function, childGraphs.toSet()).also {
+      cache.processedLocals.add(it)
+    }
+  } else existingReference
+}
 
-    override fun visitFunctionCall(functionCall: FirFunctionCall) {
-      // If the current element is a function call, add it to the list of vertices
+@OptIn(SymbolInternals::class)
+private fun FirMetaCheckerContext.createLocalCallGraph(
+  function: FirSimpleFunction,
+  cache: ProcessingCache
+): AnalyzedFunction {
+  val existingReference = cache.localFunction(function)
+  return if (existingReference == null) {
+    // Define a list to hold the vertices (function calls) in the call graph
+    val vertices = mutableSetOf<AnalyzedFunction>()
 
-      // Look up the callee reference element for the function call
-      val callee = functionCall.calleeReference.resolvedSymbol?.fir
+    // Create a visitor to traverse the children elements of the input function
+    val visitor = object : FirVisitorVoid() {
+      override fun visitElement(element: FirElement) {
+        element.acceptChildren(this)
+      }
 
+      override fun visitFunctionCall(functionCall: FirFunctionCall) {
+        // If the current element is a function call, add it to the list of vertices
 
-      // If the callee is a simple function, recursively create a call graph for it
-      if (callee is FirSimpleFunction) {
-        //vertices.add(LocalFunction(callee))
-        val calleeCallGraph = createCallGraph(callee)
-        vertices.add(calleeCallGraph)
+        // Look up the callee reference element for the function call
+        val callee = functionCall.calleeReference.resolvedSymbol?.fir
+
+        // If the callee is a simple function, recursively create a call graph for it
+        if (callee is FirSimpleFunction && cache.localFunction(callee) == null) {
+          val calleeCallGraph = createCallGraph(callee, cache).also {
+            cache.add(it)
+          }
+          vertices.add(calleeCallGraph)
+        }
       }
     }
-  }
 
-  // Traverse the children elements of the input function with the visitor
-  function.accept(visitor)
+    // Traverse the children elements of the input function with the visitor
+    function.accept(visitor)
 
-  // Return the call graph with the input function as the root and the collected vertices
-  return LocalFunction(function, vertices)
+    // Return the call graph with the input function as the root and the collected vertices
+    LocalFunction(function, vertices).also {
+      cache.add(it)
+    }
+  } else existingReference
 }
 
 fun computeJvmSignature(method: Method): String {
