@@ -1,13 +1,9 @@
 package foo.bar
 
-import arrow.meta.samples.Product
+import arrow.meta.samples.Pure
 
-@Product
-data class Sample(val x: Int)
-
-
+@Pure
 fun main() {
-  val x = Sample(1).product()
-  println(x)
+  println("x")
 }
 

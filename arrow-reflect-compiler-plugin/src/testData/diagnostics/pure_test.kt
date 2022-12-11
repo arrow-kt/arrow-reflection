@@ -2,12 +2,12 @@ package foo.bar
 
 import arrow.meta.samples.Pure
 
-@Pure
+<!CallGraphIncludesIO!>@Pure
 fun foo() {
-  bar()
-}
+  <!CallGraphIncludesIO!>bar()<!>
+}<!>
 
 fun bar() {
-  println("maybe boom!")
+  <!CallGraphIncludesIO, CallGraphIncludesIO, CallGraphIncludesIO!>println("maybe boom!")<!>
   bar()
 }

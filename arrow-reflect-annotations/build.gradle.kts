@@ -49,5 +49,4 @@ sourceSets {
 dependencies {
   compileOnly(libs.kotlin.compiler)
   kotlinCompilerPluginClasspath(libs.kotlin.compiler)
-  implementation("org.apache.bcel:bcel:6.7.0")
 }
