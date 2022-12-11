@@ -8,5 +8,5 @@ fun foo() {
 }
 
 fun bar() {
-  println()
+  println("maybe boom!")
 }

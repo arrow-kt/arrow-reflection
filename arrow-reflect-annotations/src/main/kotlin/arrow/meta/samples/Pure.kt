@@ -13,6 +13,8 @@ import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 import org.jetbrains.kotlin.load.kotlin.JvmPackagePartSource
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.org.objectweb.asm.*
 import java.lang.reflect.Method
 import kotlin.annotation.AnnotationTarget.*
@@ -23,10 +25,7 @@ object PureErrors : Diagnostics.Error {
 }
 
 @Target(
-  CLASS,
-  PROPERTY,
-  CONSTRUCTOR,
-  FUNCTION
+  CLASS, PROPERTY, CONSTRUCTOR, FUNCTION
 )
 @Retention(AnnotationRetention.SOURCE)
 @Meta
@@ -38,6 +37,7 @@ annotation class Pure {
     ) {
       if (declaration is FirSimpleFunction) {
         val callGraph = createCallGraph(declaration)
+        println(callGraph.render())
         callGraph.calls.forEach {
           declaration.report(PureErrors.CallGraphIncludesIO, "Detected unsafe call to ${it}")
         }
@@ -49,11 +49,26 @@ annotation class Pure {
 }
 
 sealed class AnalyzedFunction {
+  abstract val name: String
   abstract val calls: Set<AnalyzedFunction>
 }
-data class LocalFunction(val value: FirSimpleFunction, override val calls: Set<AnalyzedFunction>) : AnalyzedFunction()
-data class RemoteFunction(val method: Method, override val calls: Set<RemoteFunction>) : AnalyzedFunction()
 
+data class LocalFunction(val value: FirSimpleFunction, override val calls: Set<AnalyzedFunction>) : AnalyzedFunction() {
+  override val name: String = value.name.asString()
+}
+
+data class RemoteFunction(val method: Method, override val calls: Set<RemoteFunction>) : AnalyzedFunction() {
+  override val name: String = method.name
+}
+
+fun AnalyzedFunction.render(indentation: String = "", isLastChild: Boolean = true): String {
+  val children = if (calls.isEmpty()) "" else calls.joinToString("") {
+    val childIndentation = if (isLastChild) "$indentation    " else "$indentation│   "
+    it.render(childIndentation, it == this@render.calls.last())
+  }
+  val connector = if (isLastChild) "└" else "├"
+  return "$indentation$connector── $name\n$children"
+}
 
 // Define a class representing a call graph
 //data class CallGraph(val parent: CallGraph?, val function: AnalyzedFunction, val calls: Set<CallGraph>)
@@ -66,16 +81,18 @@ fun FirMetaCheckerContext.createCallGraph(function: FirSimpleFunction): Analyzed
     val callableId = function.symbol.callableId
     val fnClass = classId?.asFqNameString() ?: error("no class found for $callableId")
     val fnClassType = Class.forName(fnClass)
-    val argClasses = function.valueParameters.mapNotNull { it.returnTypeRef.firClassLike(session)?.symbol?.classId }
-      .map { Class.forName(it.asFqNameString()) }
-      .toSet()
+    val argClasses =
+      function.valueParameters.mapNotNull { it.returnTypeRef.firClassLike(session)?.symbol?.classId }.mapNotNull {
+        if (it == ClassId(FqName("kotlin"), Name.identifier("Any"))) java.lang.Object::class.java
+        else Class.forName(it.asFqNameString())
+      }.toSet()
     val foundMethod = fnClassType.declaredMethods.find {
       val paramsClasses = it.parameters.map { it.type }
       val allParamsInOriginalFunction = paramsClasses.all { it in argClasses }
       it.name == function.name.asString() && allParamsInOriginalFunction
     }
     if (foundMethod != null) {
-      createLibraryCallGraph(null, foundMethod)
+      createLibraryCallGraph(foundMethod)
     } else LocalFunction(function, emptySet())
   } else {
     createLocalCallGraph(function)
@@ -83,95 +100,65 @@ fun FirMetaCheckerContext.createCallGraph(function: FirSimpleFunction): Analyzed
 }
 
 private fun FirMetaCheckerContext.createLibraryCallGraph(
-  parent: AnalyzedFunction?,
-  function: Method,
-  calls: MutableSet<RemoteFunction> = mutableSetOf()
+  function: Method, calls: MutableSet<RemoteFunction> = mutableSetOf()
 ): RemoteFunction {
-
-  val stream = function.declaringClass.getResourceAsStream(function.declaringClass.simpleName + ".class")
-
-  stream?.use {
-    extractCalls(parent, it.readBytes(), function, calls)
+  val methods = calledMethods(function)
+  val childGraphs = methods.map { method ->
+    createLibraryCallGraph(method, calls)
   }
-
-  val current = RemoteFunction(function, calls)
-  return if (calls.isEmpty()) current
-  else current.copy(calls = calls.map { createLibraryCallGraph(it, it.method) }.toSet())
+  return RemoteFunction(function, childGraphs.toSet())
 }
 
-@OptIn(SymbolInternals::class)
-private fun FirMetaCheckerContext.extractCalls(
-  parent: AnalyzedFunction?,
-  bytes: ByteArray?,
-  function: Method,
-  calls: MutableSet<RemoteFunction>
-) {
 
-  if (bytes != null) {
-    // Load the class that contains the function using the ASM library
-    val classReader = ClassReader(bytes)
+// This class is used to traverse the bytecode instructions of a method and
+// collect the names of the methods that are called by the method
+class MethodCallGraphVisitor : MethodVisitor(Opcodes.ASM9) {
+  // Set to store the names of the methods that are called by the current method
+  val calledMethods = mutableSetOf<Method>()
 
-    // Create a class visitor to iterate over the methods in the class
-    val classVisitor = object : ClassVisitor(Opcodes.ASM9) {
+  override fun visitMethodInsn(
+    opcode: Int, owner: String, name: String, descriptor: String, isInterface: Boolean
+  ) {
+    val classId = ClassId.fromString(owner)
+    val nextClass = Class.forName(classId.asFqNameString())
+    val calledFunction = nextClass.methods.firstOrNull {
+      val methodSignature = computeJvmSignature(it)
+      it.name == name && methodSignature == descriptor
+    }
+    // When a method instruction is encountered, add the name of the called method
+    // to the set of called methods
+    calledFunction?.let { calledMethods.add(it) }
+  }
+}
 
+fun calledMethods(method: Method): Set<Method> {
+  // Get the bytecode of the method
+  val className = method.declaringClass.simpleName
+  val methodName = method.name
+  val methodDescriptor = Type.getMethodDescriptor(method)
+
+  val classBytes = method.declaringClass.getResourceAsStream("$className.class")?.readBytes()
+  val methodVisitor = MethodCallGraphVisitor()
+  if (classBytes != null) {
+
+    // Use ASM to read the bytecode and visit the instructions of the method
+    val classReader = ClassReader(classBytes)
+
+    classReader.accept(object : ClassVisitor(Opcodes.ASM7) {
       override fun visitMethod(
-        access: Int,
-        name: String,
-        descriptor: String,
-        signature: String?,
-        exceptions: Array<out String>?
-      ):
-        MethodVisitor? {
-        // Check if the method we are visiting is the one we are interested in
-        if (name == function.name) {
-          // Create a method visitor to iterate over the instructions in the method
-          return object : MethodVisitor(Opcodes.ASM9) {
-
-
-            // Override the visitMethodInsn method to handle method calls
-            override fun visitMethodInsn(
-              opcode: Int,
-              owner: String,
-              name: String,
-              descriptor: String,
-              isInterface: Boolean
-            ) {
-              super.visitMethodInsn(opcode, owner, name, descriptor, isInterface)
-              //Class.forName(owner.replace("/",".")).getResource("PrintStream.class")
-              // Convert the asm method object to a FirSimpleFunction using the conversion function
-              val classId = ClassId.fromString(owner)
-              val nextClass = Class.forName(classId.asFqNameString())
-              val calledFunction = nextClass.methods.firstOrNull {
-                val methodSignature = computeJvmSignature(it)
-                it.name == name && methodSignature == descriptor
-              }
-
-              if (calledFunction != null) {
-
-                //val rmFn = RemoteFunction(calledFunction)
-
-                // Add the called function to the list of vertices in the call graph
-                // vertices.add(RemoteFunction(calledFunction))
-
-                val call = RemoteFunction(calledFunction, emptySet())
-
-                // Add the vertices in the called function's call graph to the list of vertices in the current call graph
-                calls.add(call)
-
-              }
-            }
-          }
+        access: Int, name: String, descriptor: String, signature: String?, exceptions: Array<out String>?
+      ): MethodVisitor? {
+        // When the target method is found, return the method visitor that
+        // collects the names of the called methods
+        val evalMethod = method
+        if (name == methodName && descriptor == methodDescriptor) {
+          return methodVisitor
         }
-
         return null
       }
-    }
-
-
-
-    // Visit the class to iterate over its methods
-    classReader.accept(classVisitor, ClassReader.SKIP_FRAMES)
+    }, ClassReader.SKIP_FRAMES)
   }
+  return methodVisitor.calledMethods
 }
 
 @OptIn(SymbolInternals::class)
