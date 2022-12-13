@@ -35,6 +35,18 @@ public class BoxTestGenerated extends AbstractBoxTest {
     }
 
     @Test
+    @TestMetadata("optics_iterable_test.kt")
+    public void testOptics_iterable_test() throws Exception {
+        runTest("src/testData/box/optics_iterable_test.kt");
+    }
+
+    @Test
+    @TestMetadata("optics_test.kt")
+    public void testOptics_test() throws Exception {
+        runTest("src/testData/box/optics_test.kt");
+    }
+
+    @Test
     @TestMetadata("product_test.kt")
     public void testProduct_test() throws Exception {
         runTest("src/testData/box/product_test.kt");

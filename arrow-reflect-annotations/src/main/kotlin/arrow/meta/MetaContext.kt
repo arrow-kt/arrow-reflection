@@ -69,7 +69,7 @@ abstract class FirMetaContext(
 
   val String.function: FirSimpleFunction
     get() {
-      val results = templateCompiler.compileSource(this, extendedAnalysisMode = false, scopeDeclarations)
+      val results = templateCompiler.compileSource(this@FirMetaContext as? FirMetaCheckerContext, this, extendedAnalysisMode = false, scopeDeclarations)
       val firFiles = results.firResults.flatMap { it.files }
       val currentElement: FirSimpleFunction? = findSelectedFirElement(FirSimpleFunction::class, firFiles)
       return currentElement ?: error("Could not find a ${FirSimpleFunction::class}")
@@ -89,7 +89,7 @@ abstract class FirMetaContext(
       )
 
   inline fun <reified Fir : FirElement> compile(@Language("kotlin") source: String): Fir {
-    val results = templateCompiler.compileSource(source, extendedAnalysisMode = false, scopeDeclarations)
+    val results = templateCompiler.compileSource(this@FirMetaContext as? FirMetaCheckerContext, source, extendedAnalysisMode = false, scopeDeclarations)
     val firFiles = results.firResults.flatMap { it.files }
     val currentElement: Fir? = findSelectedFirElement(Fir::class, firFiles)
     return currentElement ?: error("Could not find a ${Fir::class}")

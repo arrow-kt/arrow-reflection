@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporterFactory
+import org.jetbrains.kotlin.diagnostics.DiagnosticUtils
 import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.collectors.FirDiagnosticsCollector
@@ -60,6 +61,7 @@ import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus
+import org.jetbrains.kotlin.psi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.readSourceFileWithMapping
 import org.jetbrains.kotlin.types.ConstantValueKind
@@ -106,6 +108,7 @@ class TemplateCompiler(
   var compiling: Boolean = false
 
   fun compileSource(
+    metaCheckerContext: FirMetaCheckerContext?,
     source: String,
     extendedAnalysisMode: Boolean,
     scopeDeclarations: List<FirDeclaration>,
@@ -133,7 +136,7 @@ class TemplateCompiler(
           messageCollector,
           moduleConfiguration
         )
-        val result = context.compileModule(scopeDeclarations)
+        val result = context.compileModule(metaCheckerContext, scopeDeclarations)
 
         val templateResult = result ?: return TemplateResult(emptyList(), emptyList())
         outputs += templateResult
@@ -150,17 +153,17 @@ class TemplateCompiler(
     }
   }
 
-  private fun CompilationContext.compileModule(scopeDeclarations: List<FirDeclaration>): FirResult? {
+  private fun CompilationContext.compileModule(metaCheckerContext: FirMetaCheckerContext?, scopeDeclarations: List<FirDeclaration>): FirResult? {
     ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
     val renderDiagnosticNames = true
     val diagnosticsReporter = DiagnosticReporterFactory.createPendingReporter()
     val firResult = runFrontend(allSources, diagnosticsReporter, scopeDeclarations)
-    if (firResult == null) {
-      FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(
-        diagnosticsReporter,
-        messageCollector,
-        renderDiagnosticNames
-      )
+    val diagnosticsContext = metaCheckerContext?.checkerContext
+    if (firResult == null && diagnosticsContext != null) {
+      diagnosticsReporter.diagnostics.forEach {
+        metaCheckerContext.diagnosticReporter.report(it, diagnosticsContext)
+        println("error: [" + it.factory.name + "] " + it.factory.ktRenderer.render(it))
+      }
       return null
     }
     return firResult
@@ -341,7 +344,7 @@ class FirBodyResolveProcessor(
   session: FirSession,
   scopeSession: ScopeSession,
   scopeDeclarations: List<FirDeclaration>
-) : FirTransformerBasedResolveProcessor(session, scopeSession) {
+) : FirTransformerBasedResolveProcessor(session, scopeSession, FirResolvePhase.RAW_FIR) {
   override val transformer = FirBodyResolveTransformerAdapter(session, scopeSession, scopeDeclarations)
 }
 
