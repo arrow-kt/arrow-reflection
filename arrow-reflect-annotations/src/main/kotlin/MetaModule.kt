@@ -9,5 +9,5 @@ interface MetaModule: Module {
   val log: Log
   val decorator: Decorator
   val pure: Pure
-  val optics: Optics
+  //val optics: Optics
 }

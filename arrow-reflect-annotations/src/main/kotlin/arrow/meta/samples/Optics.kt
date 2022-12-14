@@ -1,131 +1,142 @@
 package arrow.meta.samples
 
-import arrow.meta.Diagnostics
-import arrow.meta.FirMetaCheckerContext
-import arrow.meta.Meta
-import arrow.meta.samples.OpticsErrors.DisallowedApi
-import arrow.meta.samples.OpticsErrors.EmptyPath
-import arrow.meta.samples.OpticsErrors.PathExpressionIncludesForeignReferences
-import org.jetbrains.kotlin.fir.expressions.*
-import org.jetbrains.kotlin.fir.types.*
-import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
-import org.jetbrains.kotlin.psi
-import kotlin.reflect.KClass
-
-interface Path<Root : Any, Out> {
-  fun get(instance: Root): Out
-  fun set(instance: Root, value: Out): Root
-}
-
-interface NullablePath<Root : Any, Out> {
-  fun get(instance: Root): Out?
-  fun set(instance: Root, value: Out): Root
-}
-
-interface IterablePath<Root : Any, Out> {
-  fun get(instance: Root): List<Out>
-  fun set(instance: Root, value: Out): Root
-}
-
-object OpticsErrors : Diagnostics.Error {
-  val EmptyPath by error1()
-  val PathExpressionIncludesForeignReferences by error1()
-  val DisallowedApi by error1()
-}
-
-@Target(AnnotationTarget.EXPRESSION)
-@Retention(AnnotationRetention.SOURCE)
-@Meta
-annotation class Optics {
-  companion object : Meta.FrontendTransformer.ImplicitInvokeCall,
-    Diagnostics(PathExpressionIncludesForeignReferences, DisallowedApi, EmptyPath) {
-
-    override fun FirMetaCheckerContext.implicitInvokeCall(implicitInvokeCall: FirImplicitInvokeCall): FirStatement {
-      val lambdaArgument = implicitInvokeCall.argumentList.arguments.firstOrNull() as? FirLambdaArgumentExpression
-      val returnExpression =
-        (lambdaArgument?.expression as? FirAnonymousFunctionExpression)?.anonymousFunction?.body?.statements?.firstOrNull() as? FirReturnExpression
-      val path = returnExpression?.result
-      val fromConeType = implicitInvokeCall.typeRef.coneType.typeArguments.firstOrNull()?.type
-      val from = if (fromConeType != null) buildResolvedTypeRef { type = fromConeType } else null
-      val to = path?.typeRef
-      return if (from != null && to != null) {
-        path(from, to, path)
-      } else {
-        implicitInvokeCall
-      }
-    }
-
-    fun FirMetaCheckerContext.path(
-      from: FirTypeRef,
-      to: FirTypeRef,
-      expression: FirExpression
-    ): FirStatement {
-      val notNullableTo = to.coneType.makeConeTypeDefinitelyNotNullOrNotNull(session.typeContext).renderReadable()
-      val parts = listOf("instance") + expression.source.psi?.text?.split(".").orEmpty()
-      expression.report(EmptyPath, "Empty path, expected at least one part in this path")
-      return if (parts.isNotEmpty()) {
-        compile<FirAnonymousObjectExpression>(
-          """
-            val x = object : arrow.meta.samples.NullablePath<${+from}, ${notNullableTo}> {
-              override fun get(instance: ${+from}): ${+to} =
-                instance.${+expression}
-
-              override fun set(instance: ${+from}, value: ${notNullableTo}): ${+from} =
-                ${generateCopy(parts)}
-            }
-            """
-        )
-      } else expression
-    }
-
-    fun generateCopy(parts: List<String>): String {
-      // if there are no parts, just return the initial value
-      return if (parts.isEmpty()) ""
-      else if (parts.size == 1) parts.first()
-      else {
-        val result = parts.foldIndexed("") { n, acc, part ->
-          val propertyName = part.removeSuffix("?")
-          val previousWasNullable = n == 0 || parts[n - 1].lastOrNull() == '?'
-          if (n == 0) parts[0] + ".copy("
-          else if (part == parts.lastOrNull()) {
-            "$acc$propertyName = value"
-          } else {
-            "$acc$propertyName = ${
-              (0..n).joinToString(".") {
-                if (previousWasNullable) parts[it].removeSuffix("?") // applies smartcast 
-                else parts[it]
-              }
-            }.copy("
-          }
-        }
-        // add closing parentheses for the nested copy calls
-        result.padEnd(result.length + parts.size, ')')
-      }
-    }
-
-  }
-}
-
-
-operator fun <A : Any, B> KClass<A>.invoke(f: A.() -> B): Path<A, B> = TODO("synth")
-
-
-data class Street(val number: Int, val name: String)
-
-data class Address(val city: String, val street: Street)
-
-data class Company(val name: String, val address: Address, val employees: List<Employee>)
-
-data class Employee(val name: String, val company: Company?)
-
-fun <A, B> A.copy(f: A.() -> B): A = TODO()
-
-fun main() {
-  val path = @Optics Employee::class { company?.address?.street?.number }
-
-  val employee =
-    Employee("John Doe", Company("Arrow", Address("Functional city", Street(23, "lambda street")), emptyList()))
-  employee
-
-
-}
+//import arrow.meta.Diagnostics
+//import arrow.meta.FirMetaCheckerContext
+//import arrow.meta.Meta
+//import arrow.meta.samples.OpticsErrors.DisallowedApi
+//import arrow.meta.samples.OpticsErrors.EmptyPath
+//import arrow.meta.samples.OpticsErrors.PathExpressionIncludesForeignReferences
+//import org.jetbrains.kotlin.fir.FirElement
+//import org.jetbrains.kotlin.fir.expressions.*
+//import org.jetbrains.kotlin.fir.types.*
+//import org.jetbrains.kotlin.fir.visitors.FirVisitor
+//import org.jetbrains.kotlin.text
+//import kotlin.contracts.ExperimentalContracts
+//import kotlin.contracts.InvocationKind
+//import kotlin.contracts.contract
+//
+//interface Path<Root : Any, Out> {
+//  fun get(instance: Root): Out
+//  fun set(instance: Root, value: Out): Root
+//}
+//
+//interface NullablePath<Root : Any, Out> {
+//  fun get(instance: Root): Out?
+//  fun set(instance: Root, value: Out): Root
+//}
+//
+//interface IterablePath<Root : Any, Out> {
+//  fun get(instance: Root): List<Out>
+//  fun set(instance: Root, value: Out): Root
+//}
+//
+//object OpticsErrors : Diagnostics.Error {
+//  val EmptyPath by error1()
+//  val PathExpressionIncludesForeignReferences by error1()
+//  val DisallowedApi by error1()
+//}
+//
+//@Target(AnnotationTarget.FUNCTION)
+//@Retention(AnnotationRetention.RUNTIME)
+//@Meta
+//annotation class Optics {
+//  companion object : Meta.FrontendTransformer.Expression,
+//    Diagnostics(PathExpressionIncludesForeignReferences, DisallowedApi, EmptyPath) {
+//
+//    override fun FirMetaCheckerContext.expression(expression: FirExpression): FirStatement {
+//      println(expression.tree())
+//      return expression
+//    }
+//  }
+//}
+//
+//fun FirElement.tree(): String {
+//  val printer = ExpressionPrinter()
+//  accept(printer, 0)
+//  return printer.tree()
+//}
+//
+//class ExpressionPrinter(val builder: StringBuilder = StringBuilder()) : FirVisitor<Unit, Int>() {
+//  override fun visitElement(element: FirElement, data: Int) {
+//    val parent = data
+//    builder.append((0..data).joinToString("") { "\t" } + element::class.java.simpleName + " { ${element.source.text?.replace("\n".toRegex(), " ") ?: "" } }")
+//    builder.append("\n")
+//    element.acceptChildren(this, data + 1)
+//  } //├
+//  fun tree(): String = builder.toString()
+//}
+//
+//
+//data class Street(val number: Int, val name: String)
+//
+//data class Address(val city: String, val street: Street)
+//
+//data class Company(val name: String, val address: Address, val employees: List<Employee>)
+//
+//data class Employee(val name: String, val company: Company?)
+//
+//@Optics
+//inline fun <A> A.copy(f: A.() -> Unit): A = TODO()
+//
+//inline fun <A, B> A.copyReplaced(f: A.() -> A): A = f(this)
+//
+//inline val <A> Iterable<A>.all: A get() = TODO()
+//
+//inline fun <A> Iterable<A>.filter(f: (A) -> Boolean): A = TODO()
+//
+//fun box() {
+//  val employee =
+//    Employee("John Doe", Company("Arrow", Address("Functional city", Street(23, "lambda street")), emptyList()))
+//
+//  val path: Employee = employee.copy {
+//    company?.employees?.all?.company
+//    company?.employees?.filter { it.name == "" }?.company
+//  }
+//  return
+//}
+//
+//@DslMarker
+//annotation class EffectDsl
+//
+//@EffectDsl
+//class Raise<E> {
+//
+//  @RestrictsSuspension
+//  inner class raise(value: E) {
+//    @EffectDsl
+//    suspend fun boom(): Nothing = TODO()
+//  }
+//
+//}
+//
+//@RestrictsSuspension
+//@EffectDsl
+//class EagerRaise<E> {
+//  @EffectDsl fun raise(value: E): Nothing = TODO()
+//}
+//
+//typealias Effect<E, A> = suspend Raise<E>.() -> A
+//typealias EagerEffect<E, A> = suspend EagerRaise<E>.() -> A
+//
+//inline fun <E, A> Effect<E, A>.raise(value: E): Nothing = TODO()
+//
+//fun <E, A> effect(f: Effect<E, A>): Effect<E, A> = f
+//fun <E, A> eagerEffect(f: EagerEffect<E, A>): EagerEffect<E, A> = f
+//
+//suspend fun foo()  {}
+//
+//fun main() {
+//  effect {
+//    raise("").boom() //compiles
+//    foo()
+//    val captured = suspend {
+//      raise("").boom() // does not compile
+//    }
+//  }
+//  eagerEffect {
+//    raise("") //compiles
+//    val captured = {
+//      raise("") // does not compile
+//    }
+//  }
+//}

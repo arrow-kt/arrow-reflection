@@ -344,7 +344,7 @@ class FirBodyResolveProcessor(
   session: FirSession,
   scopeSession: ScopeSession,
   scopeDeclarations: List<FirDeclaration>
-) : FirTransformerBasedResolveProcessor(session, scopeSession, FirResolvePhase.RAW_FIR) {
+) : FirTransformerBasedResolveProcessor(session, scopeSession, FirResolvePhase.BODY_RESOLVE) {
   override val transformer = FirBodyResolveTransformerAdapter(session, scopeSession, scopeDeclarations)
 }
 
