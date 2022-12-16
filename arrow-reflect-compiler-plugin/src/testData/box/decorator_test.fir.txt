@@ -1,0 +1,21 @@
+FILE: decorator_test.kt
+    package foo.bar
+
+    @R|arrow/meta/samples/Decorator|() public final fun foo(value: R|kotlin/Int|): R|kotlin/Int| {
+        ^foo R|<local>/value|.R|kotlin/Int.plus|(Int(41))
+    }
+    public final fun box(): R|kotlin/String| {
+        lval x: R|kotlin/Int| = Q|arrow/meta/samples/Decorator|.R|arrow/meta/samples/Decorator.Companion.intercept|<R|kotlin/Int|, R|kotlin/Int|>(R|kotlin/collections/listOf|<R|kotlin/Int|>(Int(0)), <L> = intercept@fun <anonymous>(args: R|kotlin/collections/List<kotlin/Any?>|): R|kotlin/Int| <inline=NoInline>  {
+            ^ Q|foo/bar|.R|foo/bar/foo|((R|<local>/args|.R|SubstitutionOverride<kotlin/collections/List.get: R|kotlin/Any?|>|(Int(0)) as R|kotlin/Int|))
+        }
+        )
+        ^box when () {
+            ==(R|<local>/x|, Int(42)) ->  {
+                String(OK)
+            }
+            else ->  {
+                String(Fail)
+            }
+        }
+
+    }
