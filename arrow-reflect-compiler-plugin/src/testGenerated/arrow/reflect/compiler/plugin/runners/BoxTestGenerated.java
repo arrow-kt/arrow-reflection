@@ -23,27 +23,9 @@ public class BoxTestGenerated extends AbstractBoxTest {
     }
 
     @Test
-    @TestMetadata("decorator_expected_test.kt")
-    public void testDecorator_expected_test() throws Exception {
-        runTest("src/testData/box/decorator_expected_test.kt");
-    }
-
-    @Test
     @TestMetadata("decorator_test.kt")
     public void testDecorator_test() throws Exception {
         runTest("src/testData/box/decorator_test.kt");
-    }
-
-    @Test
-    @TestMetadata("optics_iterable_test.kt")
-    public void testOptics_iterable_test() throws Exception {
-        runTest("src/testData/box/optics_iterable_test.kt");
-    }
-
-    @Test
-    @TestMetadata("optics_test.kt")
-    public void testOptics_test() throws Exception {
-        runTest("src/testData/box/optics_test.kt");
     }
 
     @Test

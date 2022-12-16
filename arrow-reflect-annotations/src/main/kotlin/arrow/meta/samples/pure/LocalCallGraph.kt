@@ -4,7 +4,7 @@ import arrow.meta.FirMetaCheckerContext
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
-import org.jetbrains.kotlin.fir.resolvedSymbol
+import org.jetbrains.kotlin.fir.expressions.toResolvedCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 
@@ -40,7 +40,7 @@ private fun FirSimpleFunction.calledMethods(): Map<FirFunctionCall, FirSimpleFun
       // If the current element is a function call, add it to the list of vertices
 
       // Look up the callee reference element for the function call
-      val callee = functionCall.calleeReference.resolvedSymbol?.fir
+      val callee = functionCall.toResolvedCallableSymbol()?.fir
       if (callee is FirSimpleFunction) {
         calledMethods[functionCall] = callee
       }
