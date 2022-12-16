@@ -11,7 +11,7 @@ FILE fqName:foo.bar fileName:/decorator_test.kt
   FUN name:box visibility:public modality:FINAL <> () returnType:kotlin.String
     BLOCK_BODY
       VAR name:x type:kotlin.Int [val]
-        CALL 'public final fun intercept <In, Out> (args: kotlin.collections.List<In of arrow.meta.samples.Decorator.Companion.intercept>, func: kotlin.Function1<kotlin.collections.List<In of arrow.meta.samples.Decorator.Companion.intercept>, Out of arrow.meta.samples.Decorator.Companion.intercept>): Out of arrow.meta.samples.Decorator.Companion.intercept declared in arrow.meta.samples.Decorator.Companion' type=kotlin.Int origin=null
+        CALL 'public open fun intercept <In, Out> (args: kotlin.collections.List<In of arrow.meta.samples.Decorator.Companion.intercept>, func: kotlin.Function1<kotlin.collections.List<In of arrow.meta.samples.Decorator.Companion.intercept>, Out of arrow.meta.samples.Decorator.Companion.intercept>): Out of arrow.meta.samples.Decorator.Companion.intercept declared in arrow.meta.samples.Decorator.Companion' type=kotlin.Int origin=null
           <In>: kotlin.Int
           <Out>: kotlin.Int
           $this: GET_OBJECT 'CLASS IR_EXTERNAL_DECLARATION_STUB OBJECT name:Companion modality:FINAL visibility:public [companion] superTypes:[arrow.meta.Meta.CallInterceptor]' type=arrow.meta.samples.Decorator.Companion

@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
 import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
 import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives
+import org.jetbrains.kotlin.test.frontend.fir.FirFrontendFacade
 import org.jetbrains.kotlin.test.initIdeaConfiguration
 import org.jetbrains.kotlin.test.model.DependencyKind
 import org.jetbrains.kotlin.test.runners.AbstractKotlinCompilerTest
@@ -28,7 +29,7 @@ abstract class BaseTestRunner : AbstractKotlinCompilerTest() {
 }
 
 fun TestConfigurationBuilder.commonFirWithPluginFrontendConfiguration() {
-  baseFirDiagnosticTestConfiguration()
+  baseFirDiagnosticTestConfiguration(frontendFacade = ::FirFrontendFacade)
 
   defaultDirectives {
     +FirDiagnosticsDirectives.ENABLE_PLUGIN_PHASES

@@ -1,0 +1,10 @@
+FILE: pure_test.kt
+    package foo.bar
+
+    @R|arrow/meta/samples/Pure|() public final fun foo(): R|kotlin/Unit| {
+        R|foo/bar/bar|()
+    }
+    public final fun bar(): R|kotlin/Unit| {
+        R|kotlin/io/println|(String(maybe boom!))
+        R|foo/bar/bar|()
+    }

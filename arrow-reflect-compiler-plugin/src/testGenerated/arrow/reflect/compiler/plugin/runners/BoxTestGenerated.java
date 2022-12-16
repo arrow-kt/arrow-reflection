@@ -23,12 +23,6 @@ public class BoxTestGenerated extends AbstractBoxTest {
     }
 
     @Test
-    @TestMetadata("decorator_expected_test.kt")
-    public void testDecorator_expected_test() throws Exception {
-        runTest("src/testData/box/decorator_expected_test.kt");
-    }
-
-    @Test
     @TestMetadata("decorator_test.kt")
     public void testDecorator_test() throws Exception {
         runTest("src/testData/box/decorator_test.kt");

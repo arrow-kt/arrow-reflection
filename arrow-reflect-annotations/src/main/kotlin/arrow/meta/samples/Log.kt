@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.expressions.FirExpression
-import org.jetbrains.kotlin.fir.renderWithType
 import kotlin.annotation.AnnotationTarget.*
 
 object Errors : Diagnostics.Error {
@@ -41,7 +40,7 @@ annotation class Log {
       expression: FirElement
     ) {
       expression.report(
-        META_LOG, expression.renderWithType()
+        META_LOG, "found error on expression: ${+expression}"
       )
     }
 
