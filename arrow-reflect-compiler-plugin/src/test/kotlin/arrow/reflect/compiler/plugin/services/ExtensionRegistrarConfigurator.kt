@@ -1,6 +1,5 @@
 package arrow.reflect.compiler.plugin.services
 
-import arrow.meta.FrontendScopeCache
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.FirArrowReflectExtensionRegistrar
 import arrow.reflect.compiler.plugin.targets.ClasspathMetaScanner
@@ -19,8 +18,7 @@ class ExtensionRegistrarConfigurator(
     configuration: CompilerConfiguration
   ) {
     val metaTargets = ClasspathMetaScanner.classPathMetaTargets()
-    val frontendScopeCache = FrontendScopeCache()
-    val templateCompiler = TemplateCompiler(configuration, frontendScopeCache)
+    val templateCompiler = TemplateCompiler(configuration)
     FirExtensionRegistrarAdapter.registerExtension(FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets))
   }
 }

@@ -5,12 +5,10 @@ import arrow.reflect.compiler.plugin.fir.checkers.isMetaAnnotated
 import arrow.reflect.compiler.plugin.fir.checkers.metaAnnotations
 import arrow.reflect.compiler.plugin.targets.MetaInvoke
 import arrow.reflect.compiler.plugin.targets.MetaTarget
+import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
-import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
-import org.jetbrains.kotlin.fir.expressions.builder.buildConstExpression
-import org.jetbrains.kotlin.fir.expressions.impl.FirAnnotationArgumentMappingImpl
 import org.jetbrains.kotlin.fir.extensions.AnnotationFqn
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
@@ -21,12 +19,12 @@ import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeLookupTagBasedType
-import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
+import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.types.ConstantValueKind
+import org.jetbrains.kotlin.text
 
 class FirMetaCodegenExtension(
   session: FirSession,
@@ -87,6 +85,14 @@ class FirMetaCodegenExtension(
           ?: invokeMeta(metaContext(context), metaAnnotations, superType, "functions", context)
       val decls = context.owner.fir.declarations as? MutableList<FirDeclaration>
       val patched = patchedfunctions(functions, callableId, context)
+
+      patched?.firstOrNull()?.accept(object : FirVisitor<Unit, Unit>() {
+        override fun visitElement(element: FirElement, data: Unit) {
+          println(element::class.simpleName + " in file:" + element.source.text)
+          element.acceptChildren(this, data)
+        }
+      }, Unit)
+
       decls?.addAll(patched.orEmpty())
       patched?.map { it.symbol } ?: super.generateFunctions(callableId, context)
     } else super.generateFunctions(callableId, context)
@@ -98,23 +104,7 @@ class FirMetaCodegenExtension(
     context: MemberGenerationContext
   ): List<FirSimpleFunction>? = functions?.map { simpleFunction ->
     buildSimpleFunctionCopy(simpleFunction) {
-      annotations += buildAnnotation {
-        annotationTypeRef = buildResolvedTypeRef { type = fromTemplateAnnotationType }
-        argumentMapping =
-          FirAnnotationArgumentMappingImpl(
-            null,
-            mapOf(
-              Name.identifier("parent") to
-                buildConstExpression(
-                  null,
-                  ConstantValueKind.String,
-                  callableId.classId?.asString() ?: error("expected class name in callable"),
-                  mutableListOf(),
-                  true
-                )
-            )
-          )
-      }
+      resolvePhase = FirResolvePhase.BODY_RESOLVE
       symbol =
         FirNamedFunctionSymbol(callableId).also {
           // it.bind(simpleFunction)

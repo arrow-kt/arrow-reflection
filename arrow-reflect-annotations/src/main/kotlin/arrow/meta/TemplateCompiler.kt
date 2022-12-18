@@ -76,8 +76,7 @@ class FirResult(
 )
 
 class TemplateCompiler(
-  val projectConfiguration: CompilerConfiguration,
-  val frontEndScopeCache: FrontendScopeCache
+  val projectConfiguration: CompilerConfiguration
 ) {
 
   private var counter = AtomicInteger(0)

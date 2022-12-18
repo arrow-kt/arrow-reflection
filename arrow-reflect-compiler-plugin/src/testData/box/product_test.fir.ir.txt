@@ -59,8 +59,6 @@ FILE fqName:test fileName:/product_test.kt
             foo: GET_VAR 'foo: kotlin.Int declared in test.Sample.copy' type=kotlin.Int origin=null
             bar: GET_VAR 'bar: kotlin.String declared in test.Sample.copy' type=kotlin.String origin=null
     FUN name:product visibility:public modality:FINAL <> ($this:test.Sample) returnType:kotlin.collections.List<kotlin.Pair<kotlin.String, *>>
-      annotations:
-        FromTemplate(parent = 'test/Sample')
       $this: VALUE_PARAMETER name:<this> type:test.Sample
       BLOCK_BODY
         RETURN type=kotlin.Nothing from='public final fun product (): kotlin.collections.List<kotlin.Pair<kotlin.String, *>> declared in test.Sample'
