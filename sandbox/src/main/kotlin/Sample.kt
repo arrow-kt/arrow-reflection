@@ -1,8 +1,6 @@
 package example
 
-import arrow.meta.samples.Log
 import arrow.meta.samples.Product
-import arrow.meta.samples.Pure
 
 @Product
 data class Sample(val name: String, val age: Int)
