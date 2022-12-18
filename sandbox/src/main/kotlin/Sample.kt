@@ -9,6 +9,6 @@ data class Sample(val name: String, val age: Int)
 
 
 fun main() {
-  val properties = @Log Sample("j", 12).product()
-  @Log println(properties)
+  val properties = Sample("j", 12).product()
+  println(properties)
 }

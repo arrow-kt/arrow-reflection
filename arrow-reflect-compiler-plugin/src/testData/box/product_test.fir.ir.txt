@@ -1,0 +1,188 @@
+FILE fqName:test fileName:/product_test.kt
+  CLASS CLASS name:Sample modality:FINAL visibility:public [data] superTypes:[kotlin.Any]
+    annotations:
+      Product
+    $this: VALUE_PARAMETER INSTANCE_RECEIVER name:<this> type:test.Sample
+    CONSTRUCTOR visibility:public <> (foo:kotlin.Int, bar:kotlin.String) returnType:test.Sample [primary]
+      VALUE_PARAMETER name:foo index:0 type:kotlin.Int
+      VALUE_PARAMETER name:bar index:1 type:kotlin.String
+      BLOCK_BODY
+        DELEGATING_CONSTRUCTOR_CALL 'public constructor <init> () [primary] declared in kotlin.Any'
+        INSTANCE_INITIALIZER_CALL classDescriptor='CLASS CLASS name:Sample modality:FINAL visibility:public [data] superTypes:[kotlin.Any]'
+    PROPERTY name:foo visibility:public modality:FINAL [val]
+      FIELD PROPERTY_BACKING_FIELD name:foo type:kotlin.Int visibility:private [final]
+        EXPRESSION_BODY
+          GET_VAR 'foo: kotlin.Int declared in test.Sample.<init>' type=kotlin.Int origin=INITIALIZE_PROPERTY_FROM_PARAMETER
+      FUN DEFAULT_PROPERTY_ACCESSOR name:<get-foo> visibility:public modality:FINAL <> ($this:test.Sample) returnType:kotlin.Int
+        correspondingProperty: PROPERTY name:foo visibility:public modality:FINAL [val]
+        $this: VALUE_PARAMETER name:<this> type:test.Sample
+        BLOCK_BODY
+          RETURN type=kotlin.Nothing from='public final fun <get-foo> (): kotlin.Int declared in test.Sample'
+            GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:foo type:kotlin.Int visibility:private [final]' type=kotlin.Int origin=null
+              receiver: GET_VAR '<this>: test.Sample declared in test.Sample.<get-foo>' type=test.Sample origin=null
+    PROPERTY name:bar visibility:public modality:FINAL [val]
+      FIELD PROPERTY_BACKING_FIELD name:bar type:kotlin.String visibility:private [final]
+        EXPRESSION_BODY
+          GET_VAR 'bar: kotlin.String declared in test.Sample.<init>' type=kotlin.String origin=INITIALIZE_PROPERTY_FROM_PARAMETER
+      FUN DEFAULT_PROPERTY_ACCESSOR name:<get-bar> visibility:public modality:FINAL <> ($this:test.Sample) returnType:kotlin.String
+        correspondingProperty: PROPERTY name:bar visibility:public modality:FINAL [val]
+        $this: VALUE_PARAMETER name:<this> type:test.Sample
+        BLOCK_BODY
+          RETURN type=kotlin.Nothing from='public final fun <get-bar> (): kotlin.String declared in test.Sample'
+            GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:bar type:kotlin.String visibility:private [final]' type=kotlin.String origin=null
+              receiver: GET_VAR '<this>: test.Sample declared in test.Sample.<get-bar>' type=test.Sample origin=null
+    FUN name:component1 visibility:public modality:FINAL <> ($this:test.Sample) returnType:kotlin.Int [operator]
+      $this: VALUE_PARAMETER name:<this> type:test.Sample
+      BLOCK_BODY
+        RETURN type=kotlin.Nothing from='public final fun component1 (): kotlin.Int [operator] declared in test.Sample'
+          GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:foo type:kotlin.Int visibility:private [final]' type=kotlin.Int origin=null
+            receiver: GET_VAR '<this>: test.Sample declared in test.Sample.component1' type=test.Sample origin=null
+    FUN name:component2 visibility:public modality:FINAL <> ($this:test.Sample) returnType:kotlin.String [operator]
+      $this: VALUE_PARAMETER name:<this> type:test.Sample
+      BLOCK_BODY
+        RETURN type=kotlin.Nothing from='public final fun component2 (): kotlin.String [operator] declared in test.Sample'
+          GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:bar type:kotlin.String visibility:private [final]' type=kotlin.String origin=null
+            receiver: GET_VAR '<this>: test.Sample declared in test.Sample.component2' type=test.Sample origin=null
+    FUN name:copy visibility:public modality:FINAL <> ($this:test.Sample, foo:kotlin.Int, bar:kotlin.String) returnType:test.Sample
+      $this: VALUE_PARAMETER name:<this> type:test.Sample
+      VALUE_PARAMETER name:foo index:0 type:kotlin.Int
+        EXPRESSION_BODY
+          GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:foo type:kotlin.Int visibility:private [final]' type=kotlin.Int origin=null
+            receiver: GET_VAR '<this>: test.Sample declared in test.Sample.copy' type=test.Sample origin=null
+      VALUE_PARAMETER name:bar index:1 type:kotlin.String
+        EXPRESSION_BODY
+          GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:bar type:kotlin.String visibility:private [final]' type=kotlin.String origin=null
+            receiver: GET_VAR '<this>: test.Sample declared in test.Sample.copy' type=test.Sample origin=null
+      BLOCK_BODY
+        RETURN type=kotlin.Nothing from='public final fun copy (foo: kotlin.Int, bar: kotlin.String): test.Sample declared in test.Sample'
+          CONSTRUCTOR_CALL 'public constructor <init> (foo: kotlin.Int, bar: kotlin.String) [primary] declared in test.Sample' type=test.Sample origin=null
+            foo: GET_VAR 'foo: kotlin.Int declared in test.Sample.copy' type=kotlin.Int origin=null
+            bar: GET_VAR 'bar: kotlin.String declared in test.Sample.copy' type=kotlin.String origin=null
+    FUN name:product visibility:public modality:FINAL <> ($this:test.Sample) returnType:kotlin.collections.List<kotlin.Pair<kotlin.String, *>>
+      $this: VALUE_PARAMETER name:<this> type:test.Sample
+      BLOCK_BODY
+        RETURN type=kotlin.Nothing from='public final fun product (): kotlin.collections.List<kotlin.Pair<kotlin.String, *>> declared in test.Sample'
+          CALL 'public final fun listOf <T> (vararg elements: T of kotlin.collections.CollectionsKt.listOf): kotlin.collections.List<T of kotlin.collections.CollectionsKt.listOf> declared in kotlin.collections.CollectionsKt' type=kotlin.collections.List<kotlin.Pair<kotlin.String, kotlin.Any>> origin=null
+            <T>: kotlin.Pair<kotlin.String, kotlin.Any>
+            elements: VARARG type=kotlin.Array<out kotlin.Pair<kotlin.String, kotlin.Any>> varargElementType=kotlin.Pair<kotlin.String, kotlin.Any>
+              CALL 'public final fun to <A, B> (that: B of kotlin.TuplesKt.to): kotlin.Pair<A of kotlin.TuplesKt.to, B of kotlin.TuplesKt.to> [infix] declared in kotlin.TuplesKt' type=kotlin.Pair<kotlin.String, kotlin.Int> origin=null
+                <A>: kotlin.String
+                <B>: kotlin.Int
+                $receiver: CONST String type=kotlin.String value="foo"
+                that: CALL 'public final fun <get-foo> (): kotlin.Int declared in test.Sample' type=kotlin.Int origin=GET_PROPERTY
+                  $this: GET_VAR '<this>: test.Sample declared in test.Sample.product' type=test.Sample origin=null
+              CALL 'public final fun to <A, B> (that: B of kotlin.TuplesKt.to): kotlin.Pair<A of kotlin.TuplesKt.to, B of kotlin.TuplesKt.to> [infix] declared in kotlin.TuplesKt' type=kotlin.Pair<kotlin.String, kotlin.String> origin=null
+                <A>: kotlin.String
+                <B>: kotlin.String
+                $receiver: CONST String type=kotlin.String value="bar"
+                that: CALL 'public final fun <get-bar> (): kotlin.String declared in test.Sample' type=kotlin.String origin=GET_PROPERTY
+                  $this: GET_VAR '<this>: test.Sample declared in test.Sample.product' type=test.Sample origin=null
+    FUN GENERATED_DATA_CLASS_MEMBER name:equals visibility:public modality:OPEN <> ($this:test.Sample, other:kotlin.Any?) returnType:kotlin.Boolean
+      overridden:
+        public open fun equals (other: kotlin.Any?): kotlin.Boolean [operator] declared in kotlin.Any
+      $this: VALUE_PARAMETER GENERATED_DATA_CLASS_MEMBER name:<this> type:test.Sample
+      VALUE_PARAMETER GENERATED_DATA_CLASS_MEMBER name:other index:0 type:kotlin.Any?
+      BLOCK_BODY
+        WHEN type=kotlin.Unit origin=null
+          BRANCH
+            if: CALL 'public final fun EQEQEQ (arg0: kotlin.Any?, arg1: kotlin.Any?): kotlin.Boolean declared in kotlin.internal.ir' type=kotlin.Boolean origin=EQEQEQ
+              arg0: GET_VAR '<this>: test.Sample declared in test.Sample.equals' type=test.Sample origin=null
+              arg1: GET_VAR 'other: kotlin.Any? declared in test.Sample.equals' type=kotlin.Any? origin=null
+            then: RETURN type=kotlin.Nothing from='public open fun equals (other: kotlin.Any?): kotlin.Boolean declared in test.Sample'
+              CONST Boolean type=kotlin.Boolean value=true
+        WHEN type=kotlin.Unit origin=null
+          BRANCH
+            if: TYPE_OP type=kotlin.Boolean origin=NOT_INSTANCEOF typeOperand=test.Sample
+              GET_VAR 'other: kotlin.Any? declared in test.Sample.equals' type=kotlin.Any? origin=null
+            then: RETURN type=kotlin.Nothing from='public open fun equals (other: kotlin.Any?): kotlin.Boolean declared in test.Sample'
+              CONST Boolean type=kotlin.Boolean value=false
+        VAR IR_TEMPORARY_VARIABLE name:tmp_0 type:test.Sample [val]
+          TYPE_OP type=test.Sample origin=CAST typeOperand=test.Sample
+            GET_VAR 'other: kotlin.Any? declared in test.Sample.equals' type=kotlin.Any? origin=null
+        WHEN type=kotlin.Unit origin=null
+          BRANCH
+            if: CALL 'public final fun not (): kotlin.Boolean [operator] declared in kotlin.Boolean' type=kotlin.Boolean origin=EXCLEQ
+              $this: CALL 'public final fun EQEQ (arg0: kotlin.Any?, arg1: kotlin.Any?): kotlin.Boolean declared in kotlin.internal.ir' type=kotlin.Boolean origin=EXCLEQ
+                arg0: GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:foo type:kotlin.Int visibility:private [final]' type=kotlin.Int origin=null
+                  receiver: GET_VAR '<this>: test.Sample declared in test.Sample.equals' type=test.Sample origin=null
+                arg1: GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:foo type:kotlin.Int visibility:private [final]' type=kotlin.Int origin=null
+                  receiver: GET_VAR 'val tmp_0: test.Sample [val] declared in test.Sample.equals' type=test.Sample origin=null
+            then: RETURN type=kotlin.Nothing from='public open fun equals (other: kotlin.Any?): kotlin.Boolean declared in test.Sample'
+              CONST Boolean type=kotlin.Boolean value=false
+        WHEN type=kotlin.Unit origin=null
+          BRANCH
+            if: CALL 'public final fun not (): kotlin.Boolean [operator] declared in kotlin.Boolean' type=kotlin.Boolean origin=EXCLEQ
+              $this: CALL 'public final fun EQEQ (arg0: kotlin.Any?, arg1: kotlin.Any?): kotlin.Boolean declared in kotlin.internal.ir' type=kotlin.Boolean origin=EXCLEQ
+                arg0: GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:bar type:kotlin.String visibility:private [final]' type=kotlin.String origin=null
+                  receiver: GET_VAR '<this>: test.Sample declared in test.Sample.equals' type=test.Sample origin=null
+                arg1: GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:bar type:kotlin.String visibility:private [final]' type=kotlin.String origin=null
+                  receiver: GET_VAR 'val tmp_0: test.Sample [val] declared in test.Sample.equals' type=test.Sample origin=null
+            then: RETURN type=kotlin.Nothing from='public open fun equals (other: kotlin.Any?): kotlin.Boolean declared in test.Sample'
+              CONST Boolean type=kotlin.Boolean value=false
+        RETURN type=kotlin.Nothing from='public open fun equals (other: kotlin.Any?): kotlin.Boolean declared in test.Sample'
+          CONST Boolean type=kotlin.Boolean value=true
+    FUN GENERATED_DATA_CLASS_MEMBER name:hashCode visibility:public modality:OPEN <> ($this:test.Sample) returnType:kotlin.Int
+      overridden:
+        public open fun hashCode (): kotlin.Int declared in kotlin.Any
+      $this: VALUE_PARAMETER GENERATED_DATA_CLASS_MEMBER name:<this> type:test.Sample
+      BLOCK_BODY
+        VAR name:result type:kotlin.Int [var]
+          CALL 'public open fun hashCode (): kotlin.Int [fake_override] declared in kotlin.Int' type=kotlin.Int origin=null
+            $this: GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:foo type:kotlin.Int visibility:private [final]' type=kotlin.Int origin=null
+              receiver: GET_VAR '<this>: test.Sample declared in test.Sample.hashCode' type=test.Sample origin=null
+        SET_VAR 'var result: kotlin.Int [var] declared in test.Sample.hashCode' type=kotlin.Unit origin=EQ
+          CALL 'public final fun plus (other: kotlin.Int): kotlin.Int [operator] declared in kotlin.Int' type=kotlin.Int origin=null
+            $this: CALL 'public final fun times (other: kotlin.Int): kotlin.Int [operator] declared in kotlin.Int' type=kotlin.Int origin=null
+              $this: GET_VAR 'var result: kotlin.Int [var] declared in test.Sample.hashCode' type=kotlin.Int origin=null
+              other: CONST Int type=kotlin.Int value=31
+            other: CALL 'public open fun hashCode (): kotlin.Int [fake_override] declared in kotlin.String' type=kotlin.Int origin=null
+              $this: GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:bar type:kotlin.String visibility:private [final]' type=kotlin.String origin=null
+                receiver: GET_VAR '<this>: test.Sample declared in test.Sample.hashCode' type=test.Sample origin=null
+        RETURN type=kotlin.Nothing from='public open fun hashCode (): kotlin.Int declared in test.Sample'
+          GET_VAR 'var result: kotlin.Int [var] declared in test.Sample.hashCode' type=kotlin.Int origin=null
+    FUN GENERATED_DATA_CLASS_MEMBER name:toString visibility:public modality:OPEN <> ($this:test.Sample) returnType:kotlin.String
+      overridden:
+        public open fun toString (): kotlin.String declared in kotlin.Any
+      $this: VALUE_PARAMETER GENERATED_DATA_CLASS_MEMBER name:<this> type:test.Sample
+      BLOCK_BODY
+        RETURN type=kotlin.Nothing from='public open fun toString (): kotlin.String declared in test.Sample'
+          STRING_CONCATENATION type=kotlin.String
+            CONST String type=kotlin.String value="Sample("
+            CONST String type=kotlin.String value="foo="
+            GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:foo type:kotlin.Int visibility:private [final]' type=kotlin.Int origin=null
+              receiver: GET_VAR '<this>: test.Sample declared in test.Sample.toString' type=test.Sample origin=null
+            CONST String type=kotlin.String value=", "
+            CONST String type=kotlin.String value="bar="
+            GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:bar type:kotlin.String visibility:private [final]' type=kotlin.String origin=null
+              receiver: GET_VAR '<this>: test.Sample declared in test.Sample.toString' type=test.Sample origin=null
+            CONST String type=kotlin.String value=")"
+  FUN name:box visibility:public modality:FINAL <> () returnType:kotlin.String
+    BLOCK_BODY
+      VAR name:x type:kotlin.collections.List<kotlin.Pair<kotlin.String, *>> [val]
+        CALL 'public final fun product (): kotlin.collections.List<kotlin.Pair<kotlin.String, *>> declared in test.Sample' type=kotlin.collections.List<kotlin.Pair<kotlin.String, *>> origin=null
+          $this: CONSTRUCTOR_CALL 'public constructor <init> (foo: kotlin.Int, bar: kotlin.String) [primary] declared in test.Sample' type=test.Sample origin=null
+            foo: CONST Int type=kotlin.Int value=0
+            bar: CONST String type=kotlin.String value="abc"
+      RETURN type=kotlin.Nothing from='public final fun box (): kotlin.String declared in test'
+        WHEN type=kotlin.String origin=IF
+          BRANCH
+            if: CALL 'public final fun EQEQ (arg0: kotlin.Any?, arg1: kotlin.Any?): kotlin.Boolean declared in kotlin.internal.ir' type=kotlin.Boolean origin=EQEQ
+              arg0: GET_VAR 'val x: kotlin.collections.List<kotlin.Pair<kotlin.String, *>> [val] declared in test.box' type=kotlin.collections.List<kotlin.Pair<kotlin.String, *>> origin=null
+              arg1: CALL 'public final fun listOf <T> (vararg elements: T of kotlin.collections.CollectionsKt.listOf): kotlin.collections.List<T of kotlin.collections.CollectionsKt.listOf> declared in kotlin.collections.CollectionsKt' type=kotlin.collections.List<kotlin.Pair<kotlin.String, kotlin.Any>> origin=null
+                <T>: kotlin.Pair<kotlin.String, kotlin.Any>
+                elements: VARARG type=kotlin.Array<out kotlin.Pair<kotlin.String, kotlin.Any>> varargElementType=kotlin.Pair<kotlin.String, kotlin.Any>
+                  CALL 'public final fun to <A, B> (that: B of kotlin.TuplesKt.to): kotlin.Pair<A of kotlin.TuplesKt.to, B of kotlin.TuplesKt.to> [infix] declared in kotlin.TuplesKt' type=kotlin.Pair<kotlin.String, kotlin.Int> origin=null
+                    <A>: kotlin.String
+                    <B>: kotlin.Int
+                    $receiver: CONST String type=kotlin.String value="foo"
+                    that: CONST Int type=kotlin.Int value=0
+                  CALL 'public final fun to <A, B> (that: B of kotlin.TuplesKt.to): kotlin.Pair<A of kotlin.TuplesKt.to, B of kotlin.TuplesKt.to> [infix] declared in kotlin.TuplesKt' type=kotlin.Pair<kotlin.String, kotlin.String> origin=null
+                    <A>: kotlin.String
+                    <B>: kotlin.String
+                    $receiver: CONST String type=kotlin.String value="bar"
+                    that: CONST String type=kotlin.String value="abc"
+            then: CONST String type=kotlin.String value="OK"
+          BRANCH
+            if: CONST Boolean type=kotlin.Boolean value=true
+            then: CONST String type=kotlin.String value="Fail"
+FILE fqName:foo.bar.some.additional.files fileName:/SomeFile.kt
