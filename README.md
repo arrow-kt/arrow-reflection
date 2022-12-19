@@ -263,10 +263,10 @@ annotation class Product {
       mapOf(
         "product" to {
           //language=kotlin
-          """|
-             |fun product(): List<Pair<String, *>> = 
-             |  listOf(${propertiesOf(firClass) { """"${+it.name}" to this.${+it.name}""" }})
-          """.trimMargin()
+          """
+             fun product(): List<Pair<String, *>> = 
+               listOf(${propertiesOf(firClass) { """"${+it.name}" to this.${+it.name}""" }})
+          """
         }
       )
 
