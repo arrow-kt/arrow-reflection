@@ -37,11 +37,11 @@ class FirMetaAdditionalCheckersExtension(
     override val basicDeclarationCheckers: Set<FirBasicDeclarationChecker> = setOf(
       object : FirBasicDeclarationChecker() {
         override fun check(declaration: FirDeclaration, context: CheckerContext, reporter: DiagnosticReporter) {
-          invokeChecker(Meta.Checker.Declaration::class, declaration, session, context, reporter)
           if (!templateCompiler.compiling && declaration is FirFile) {
-            val transformer = FirMetaTransformer(session, templateCompiler, metaTargets, context, reporter)
+            val transformer = FirMetaTransformer(session, templateCompiler, metaTargets, context, reporter, this@FirMetaAdditionalCheckersExtension)
             transformer.transformDeclaration(declaration, Unit)
           }
+          invokeChecker(Meta.Checker.Declaration::class, declaration, session, context, reporter)
         }
       }
     )
@@ -50,6 +50,7 @@ class FirMetaAdditionalCheckersExtension(
   override val expressionCheckers: ExpressionCheckers = object : ExpressionCheckers() {
     override val basicExpressionCheckers: Set<FirBasicExpressionChecker> = setOf(
       object : FirBasicExpressionChecker() {
+
         override fun check(expression: FirStatement, context: CheckerContext, reporter: DiagnosticReporter) {
           invokeChecker(Meta.Checker.Expression::class, expression, session, context, reporter)
         }
@@ -57,7 +58,7 @@ class FirMetaAdditionalCheckersExtension(
     )
   }
 
-  private inline fun <reified E : FirElement> invokeChecker(
+  inline fun <reified E : FirElement> invokeChecker(
       superType: KClass<*>,
       element: E,
       session: FirSession,

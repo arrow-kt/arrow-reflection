@@ -19,12 +19,12 @@ object IncrementErrors : Diagnostics.Error {
 @Retention(AnnotationRetention.SOURCE)
 @Meta
 annotation class Increment {
-  companion object : Meta.FrontendTransformer.Expression,
+  companion object :
+    Meta.Checker.Expression<FirExpression>,
+    Meta.FrontendTransformer.Expression,
     Diagnostics(IncrementNotInConstantExpression, IncrementNotInConstantInt) {
 
-    override fun FirMetaCheckerContext.expression(
-      expression: FirExpression
-    ): FirStatement {
+    override fun FirMetaCheckerContext.check(expression: FirExpression) {
       if (expression !is FirConstExpression<*>)
         expression.report(
           IncrementNotInConstantExpression,
@@ -36,7 +36,12 @@ annotation class Increment {
           IncrementNotInConstantInt,
           "found `${+expression}` but @Increment expects a constant of type `Int`"
         )
+    }
 
+    override fun FirMetaCheckerContext.expression(
+      expression: FirExpression
+    ): FirStatement {
+      check(expression)
       //language=kotlin
       return "${+expression} + 1".call
     }
