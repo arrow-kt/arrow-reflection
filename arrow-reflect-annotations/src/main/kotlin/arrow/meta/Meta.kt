@@ -35,7 +35,6 @@ annotation class Meta {
       return newCall
     }
 
-    @OptIn(SymbolInternals::class)
     private fun isDecorated(newElement: FirFunctionCall): Boolean =
       newElement.toResolvedCallableSymbol()?.fir?.annotations?.hasAnnotation(
         ClassId.topLevel(
@@ -106,11 +105,9 @@ annotation class Meta {
 
       interface Functions : Members {
 
-        @OptIn(SymbolInternals::class)
         fun FirMetaContext.functions(firClass: FirClassSymbol<*>): Set<Name> =
           newFunctions(firClass.fir).keys.map { Name.identifier(it) }.toSet()
 
-        @OptIn(SymbolInternals::class)
         fun FirMetaContext.functions(callableId: CallableId, context: MemberGenerationContext): List<FirFunction> {
           val firClass = context.owner.fir
           return newFunctions(firClass).values.map { it().function }
@@ -511,4 +508,3 @@ annotation class Meta {
   }
 
 }
-

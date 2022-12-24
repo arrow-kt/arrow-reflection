@@ -8,15 +8,14 @@ plugins {
   application
 }
 
-application { mainClass.set("example.SampleKt") }
+application {
+  mainClass.set("example.SampleKt")
+}
 
 tasks.withType<KotlinCompile>().configureEach {
   compilerOptions {
     useK2.set(true)
-    freeCompilerArgs.addAll(
-      "-Xcontext-receivers",
-      // "-Xplugin=$rootDir/arrow-inject-compiler-plugin/build/libs/arrow-reflect-compiler-plugin-0.1.0.jar"
-    )
+    freeCompilerArgs.add("-Xcontext-receivers")
   }
 }
 
