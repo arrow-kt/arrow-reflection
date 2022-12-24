@@ -61,7 +61,6 @@ abstract class FirMetaContext(
 
   abstract val scopeDeclarations: List<FirDeclaration>
 
-  @OptIn(SymbolInternals::class)
   fun propertiesOf(firClass: FirClass, f: (FirValueParameter) -> String): String =
     +firClass.primaryConstructorIfAny(session)?.fir?.valueParameters.orEmpty().filter { it.isVal }.map {
       f(it)
@@ -146,8 +145,6 @@ class FirMetaMemberGenerationContext(
   val memberGenerationContext: MemberGenerationContext?,
 ) : FirMetaContext(session, templateCompiler) {
 
-  @OptIn(SymbolInternals::class)
   override val scopeDeclarations: List<FirDeclaration>
     get() = listOfNotNull(memberGenerationContext?.owner?.fir)
 }
-

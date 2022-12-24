@@ -338,22 +338,22 @@ fun FirResolvePhase.createCompilerProcessorByPhase(
   }
 }
 
-@OptIn(AdapterForResolveProcessor::class)
 class FirBodyResolveProcessor(
   session: FirSession,
   scopeSession: ScopeSession,
   scopeDeclarations: List<FirDeclaration>
 ) : FirTransformerBasedResolveProcessor(session, scopeSession, FirResolvePhase.BODY_RESOLVE) {
+
   override val transformer = FirBodyResolveTransformerAdapter(session, scopeSession, scopeDeclarations)
 }
 
-@AdapterForResolveProcessor
+
 class FirBodyResolveTransformerAdapter(
   session: FirSession,
   scopeSession: ScopeSession,
   scopeDeclarations: List<FirDeclaration>
 ) : FirTransformer<Any?>() {
-  @OptIn(PrivateForInline::class)
+
   private val transformer = FirBodyResolveTransformer(
     session,
     phase = FirResolvePhase.BODY_RESOLVE,

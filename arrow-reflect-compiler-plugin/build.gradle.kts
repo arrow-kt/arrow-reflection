@@ -10,13 +10,13 @@ kotlin {
   sourceSets.all {
     languageSettings {
       optIn("kotlin.RequiresOptIn")
-      optIn("org.jetbrains.kotlin.fir.symbols.SymbolInternals")
-      optIn("org.jetbrains.kotlin.fir.resolve.dfa.DfaInternals")
-      optIn("org.jetbrains.kotlin.fir.resolve.dfa.DfaInternals")
-      optIn("org.jetbrains.kotlin.fir.PrivateForInline")
+      optIn("org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
       optIn("org.jetbrains.kotlin.diagnostics.InternalDiagnosticFactoryMethod")
       optIn("org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI")
-      optIn("org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
+      optIn("org.jetbrains.kotlin.fir.PrivateForInline")
+      optIn("org.jetbrains.kotlin.fir.resolve.dfa.DfaInternals")
+      optIn("org.jetbrains.kotlin.fir.resolve.transformers.AdapterForResolveProcessor")
+      optIn("org.jetbrains.kotlin.fir.symbols.SymbolInternals")
     }
   }
 }
@@ -62,7 +62,7 @@ dependencies {
 tasks.withType<KotlinCompile>().configureEach {
   compilerOptions {
     useK2.set(true)
-    freeCompilerArgs.set(listOf("-Xcontext-receivers"))
+    freeCompilerArgs.add("-Xcontext-receivers")
   }
 }
 

@@ -1,16 +1,23 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-buildscript {
-  repositories {
-    gradlePluginPortal()
-    mavenCentral()
-  }
-}
-
 plugins {
   alias(libs.plugins.kotlin.jvm)
   //  alias(libs.plugins.arrowGradleConfig.kotlin)
   alias(libs.plugins.arrowGradleConfig.publish)
+}
+
+kotlin {
+  sourceSets.all {
+    languageSettings {
+      optIn("kotlin.RequiresOptIn")
+      optIn("org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
+      optIn("org.jetbrains.kotlin.diagnostics.InternalDiagnosticFactoryMethod")
+      optIn("org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI")
+      optIn("org.jetbrains.kotlin.fir.PrivateForInline")
+      optIn("org.jetbrains.kotlin.fir.resolve.dfa.DfaInternals")
+      optIn("org.jetbrains.kotlin.fir.symbols.SymbolInternals")
+    }
+  }
 }
 
 tasks {
@@ -18,12 +25,12 @@ tasks {
   dokkaHtml { enabled = false }
   dokkaJavadoc { enabled = false }
   dokkaJekyll { enabled = false }
-}
 
-tasks.withType<KotlinCompile>().configureEach {
-  compilerOptions {
-    useK2.set(true)
-    freeCompilerArgs.set(listOf("-Xcontext-receivers"))
+  withType<KotlinCompile>().configureEach {
+    compilerOptions {
+      useK2.set(true)
+      freeCompilerArgs.add("-Xcontext-receivers")
+    }
   }
 }
 
@@ -32,7 +39,6 @@ kotlin {
     languageVersion.set(JavaLanguageVersion.of(8)) // "8"
   }
 }
-
 
 sourceSets {
   main {
