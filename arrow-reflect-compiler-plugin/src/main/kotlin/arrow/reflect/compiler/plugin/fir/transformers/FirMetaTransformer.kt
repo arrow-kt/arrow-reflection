@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.fir.FirAnnotationContainer
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
+import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.decapitalizeAsciiOnly
@@ -20,11 +21,10 @@ class FirMetaTransformer(
   private val session: FirSession, val templateCompiler: TemplateCompiler, val metaTargets: List<MetaTarget>,
   val checkerContext: CheckerContext,
   val reporter: DiagnosticReporter,
-) : FirTransformer<Unit>() {
-
-  val metaContext = FirMetaCheckerContext(templateCompiler, session, checkerContext, reporter)
+) : FirTransformer<FirDeclaration>() {
 
   private fun <E : FirAnnotationContainer> invokeMeta(
+    context: FirDeclaration,
     arg: E
   ): FirAnnotationContainer? {
     if (templateCompiler.compiling) return null
@@ -34,6 +34,7 @@ class FirMetaTransformer(
     val dispatchers = metaClasses.mapNotNull {
       val methodName = it.java.simpleName.decapitalizeAsciiOnly()
       MetaTarget.find(
+        false,
         metaAnnotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
         methodName,
         it,
@@ -45,17 +46,20 @@ class FirMetaTransformer(
 
     val result: FirAnnotationContainer? =
       dispatchers.fold(null) { out: FirAnnotationContainer?, target: MetaTarget ->
+        val metaContext = FirMetaCheckerContext(templateCompiler, session, checkerContext, reporter, context)
         out ?: target.method.invoke(target.companion.objectInstance, metaContext, arg) as? FirAnnotationContainer
       }
 
     return result
   }
 
-  override fun <E : FirElement> transformElement(element: E, data: Unit): E {
-    element.transformChildren(this, data)
-    return if (element is FirAnnotationContainer) {
-      invokeMeta(element) as E? ?: element
+  override fun <E : FirElement> transformElement(element: E, data: FirDeclaration): E {
+    val result = if (element is FirAnnotationContainer) {
+      invokeMeta(data, element) ?: element
     } else element
+    //val context = element as? FirDeclaration ?: data
+    result.transformChildren(this, data)
+    return result as E
   }
 
 }

@@ -100,33 +100,43 @@ annotation class Meta {
 
     sealed interface Members : Generate {
       interface Constructors : Members {
-        fun FirMetaContext.constructors(firClass: FirClass): Boolean
-        fun FirMetaContext.constructors(context: MemberGenerationContext): List<FirConstructor>
+        @OptIn(SymbolInternals::class)
+        fun FirMetaMemberGenerationContext.constructors(firClass: FirClassSymbol<*>): Set<Name> =
+          newConstructors(firClass.fir).keys.map { Name.identifier(it) }.toSet()
+
+        @OptIn(SymbolInternals::class)
+        fun FirMetaMemberGenerationContext.constructors(callableId: CallableId, context: MemberGenerationContext): List<FirConstructor> {
+          val firClass = context.owner.fir
+          return newConstructors(firClass).values.map { it().constructor }
+        }
+
+        fun FirMetaMemberGenerationContext.newConstructors(firClass: FirClass): Map<String, () -> String>
       }
 
       interface Functions : Members {
 
         @OptIn(SymbolInternals::class)
-        fun FirMetaContext.functions(firClass: FirClassSymbol<*>): Set<Name> =
+        fun FirMetaMemberGenerationContext.functions(firClass: FirClassSymbol<*>): Set<Name> =
           newFunctions(firClass.fir).keys.map { Name.identifier(it) }.toSet()
 
         @OptIn(SymbolInternals::class)
-        fun FirMetaContext.functions(callableId: CallableId, context: MemberGenerationContext): List<FirFunction> {
+        fun FirMetaMemberGenerationContext.functions(callableId: CallableId, context: MemberGenerationContext): List<FirFunction> {
           val firClass = context.owner.fir
           return newFunctions(firClass).values.map { it().function }
         }
 
-        fun FirMetaContext.newFunctions(firClass: FirClass): Map<String, () -> String>
+        fun FirMetaMemberGenerationContext.newFunctions(firClass: FirClass): Map<String, () -> String>
       }
 
       interface Properties : Members {
-        fun FirMetaContext.properties(firClass: FirClassSymbol<*>): Set<Name>
-        fun FirMetaContext.properties(callableId: CallableId, context: MemberGenerationContext): List<FirProperty>
+        fun FirMetaMemberGenerationContext.properties(firClass: FirClassSymbol<*>): Set<Name>
+        fun FirMetaMemberGenerationContext.properties(callableId: CallableId, context: MemberGenerationContext): List<FirProperty>
       }
 
       interface NestedClasses : Members {
-        fun FirMetaContext.nestedClasses(firClass: FirClassSymbol<*>): Set<Name>
-        fun FirMetaContext.nestedClasses(callableId: ClassId): List<FirClass>
+        fun FirMetaMemberGenerationContext.nestedClasses(firClass: FirClassSymbol<*>): Set<Name>
+
+        fun FirMetaMemberGenerationContext.nestedClasses(classId: ClassId): List<FirClass>
       }
     }
   }

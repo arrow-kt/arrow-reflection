@@ -40,7 +40,7 @@ class FirMetaAdditionalCheckersExtension(
           invokeChecker(Meta.Checker.Declaration::class, declaration, session, context, reporter)
           if (!templateCompiler.compiling && declaration is FirFile) {
             val transformer = FirMetaTransformer(session, templateCompiler, metaTargets, context, reporter)
-            transformer.transformDeclaration(declaration, Unit)
+            transformer.transformDeclaration(declaration, declaration)
           }
         }
       }
@@ -68,6 +68,7 @@ class FirMetaAdditionalCheckersExtension(
         val annotations = element.metaAnnotations(session)
         val metaContext = FirMetaCheckerContext(templateCompiler, session, context, reporter)
         invokeMeta<E, Unit>(
+          false,
           metaContext,
           annotations,
           superType = superType,

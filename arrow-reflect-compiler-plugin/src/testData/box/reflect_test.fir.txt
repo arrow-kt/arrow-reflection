@@ -1,0 +1,39 @@
+FILE: reflect_test.kt
+    package foo.bar
+
+    public final annotation class Test : R|kotlin/Annotation| {
+        public constructor(): R|foo/bar/Test| {
+            super<R|kotlin/Any|>()
+        }
+
+    }
+    @R|arrow/meta/samples/Reflect|() public final data class Sample : R|kotlin/Any| {
+        public constructor(name: R|kotlin/String|, age: R|kotlin/Int|): R|foo/bar/Sample| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final val name: R|kotlin/String| = R|<local>/name|
+            public get(): R|kotlin/String|
+
+        public final val age: R|kotlin/Int| = R|<local>/age|
+            public get(): R|kotlin/Int|
+
+        public final operator fun component1(): R|kotlin/String|
+
+        public final operator fun component2(): R|kotlin/Int|
+
+        public final fun copy(name: R|kotlin/String| = this@R|foo/bar/Sample|.R|foo/bar/Sample.name|, age: R|kotlin/Int| = this@R|foo/bar/Sample|.R|foo/bar/Sample.age|): R|foo/bar/Sample|
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval x: R|kotlin/reflect/KClass<foo/bar/Sample>| = @R|arrow/meta/samples/Reflect|() <getClass>(Q|foo/bar/Sample|)
+        ^box when () {
+            (R|<local>/x| is R|arrow/meta/samples/CompileTimeReflected<*>|) ->  {
+                String(OK)
+            }
+            else ->  {
+                String(Fail)
+            }
+        }
+
+    }

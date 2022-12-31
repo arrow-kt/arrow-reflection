@@ -1,17 +1,16 @@
 package arrow.meta
 
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.KtIoFileSourceFile
 import org.jetbrains.kotlin.KtSourceFile
 import org.jetbrains.kotlin.backend.jvm.JvmIrDeserializerImpl
-import org.jetbrains.kotlin.cli.common.fir.FirDiagnosticsCompilerResultsReporter
 import org.jetbrains.kotlin.cli.common.messages.*
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.modules.ModuleBuilder
 import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
-import org.jetbrains.kotlin.diagnostics.DiagnosticReporterFactory
-import org.jetbrains.kotlin.diagnostics.DiagnosticUtils
+import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.collectors.FirDiagnosticsCollector
@@ -20,19 +19,13 @@ import org.jetbrains.kotlin.fir.backend.jvm.JvmFir2IrExtensions
 import org.jetbrains.kotlin.fir.builder.BodyBuildingMode
 import org.jetbrains.kotlin.fir.builder.RawFirBuilder
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
-import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
-import org.jetbrains.kotlin.fir.expressions.builder.buildConstExpression
-import org.jetbrains.kotlin.fir.expressions.impl.FirAnnotationArgumentMappingImpl
 import org.jetbrains.kotlin.fir.lightTree.LightTree2Fir
-import org.jetbrains.kotlin.fir.pipeline.buildFirViaLightTree
 import org.jetbrains.kotlin.fir.pipeline.convertToIr
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.calls.ImplicitDispatchReceiverValue
 import org.jetbrains.kotlin.fir.resolve.dfa.DataFlowAnalyzerContext
 import org.jetbrains.kotlin.fir.resolve.providers.firProvider
 import org.jetbrains.kotlin.fir.resolve.providers.impl.FirProviderImpl
-import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.resolve.transformers.*
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.BodyResolveContext
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.FirBodyResolveTransformer
@@ -47,24 +40,16 @@ import org.jetbrains.kotlin.fir.scopes.impl.FirLocalScope
 import org.jetbrains.kotlin.fir.scopes.impl.FirPackageMemberScope
 import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
 import org.jetbrains.kotlin.fir.session.sourcesToPathsMapper
+import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
-import org.jetbrains.kotlin.fir.types.ConeLookupTagBasedType
-import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
+import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.incremental.createDirectory
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmIrMangler
 import org.jetbrains.kotlin.modules.Module
-import org.jetbrains.kotlin.name.CallableId
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus
-import org.jetbrains.kotlin.psi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.readSourceFileWithMapping
-import org.jetbrains.kotlin.types.ConstantValueKind
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -117,11 +102,12 @@ class TemplateCompiler(
     try {
       val next = counter.incrementAndGet()
       val fileName = "meta.template_$next.kt"
-      println("parsing source:\n$source")
+      //println("parsing source:\n$source")
       println("session: ${session::class}")
+      val sourceFile = File(templatesFolder, fileName)
       val allSources =
         listOf(
-          File(templatesFolder, fileName).also {
+          sourceFile.also {
             it.writeText(source)
           }
         )
@@ -135,7 +121,7 @@ class TemplateCompiler(
           messageCollector,
           moduleConfiguration
         )
-        val result = context.compileModule(metaCheckerContext, scopeDeclarations)
+        val result = context.compileModule(sourceFile, metaCheckerContext, scopeDeclarations)
 
         val templateResult = result ?: return TemplateResult(emptyList(), emptyList())
         outputs += templateResult
@@ -152,16 +138,21 @@ class TemplateCompiler(
     }
   }
 
-  private fun CompilationContext.compileModule(metaCheckerContext: FirMetaCheckerContext?, scopeDeclarations: List<FirDeclaration>): FirResult? {
+  private fun CompilationContext.compileModule(
+    sourceFile: File,
+    metaCheckerContext: FirMetaCheckerContext?,
+    scopeDeclarations: List<FirDeclaration>
+  ): FirResult? {
     ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
-    val renderDiagnosticNames = true
     val diagnosticsReporter = DiagnosticReporterFactory.createPendingReporter()
     val firResult = runFrontend(allSources, diagnosticsReporter, scopeDeclarations)
-    val diagnosticsContext = metaCheckerContext?.checkerContext
-    if (firResult == null && diagnosticsContext != null) {
-      diagnosticsReporter.diagnostics.forEach {
-        metaCheckerContext.diagnosticReporter.report(it, diagnosticsContext)
-        println("error: [" + it.factory.name + "] " + it.factory.ktRenderer.render(it))
+    if (firResult == null) {
+      val (source, mappings) = sourceFile.inputStream().reader().use { it.readSourceFileWithMapping() }
+      diagnosticsReporter.diagnosticsByFilePath.entries.forEach { (path, diagnostics) ->
+        diagnostics.forEach {
+          val (line, column) = mappings.getLineAndColumnByOffset(it.element.startOffset)
+          println("error: file://${sourceFile.absolutePath}:$line:$column [" + it.factory.name + "] " + it.factory.ktRenderer.render(it))
+        }
       }
       return null
     }

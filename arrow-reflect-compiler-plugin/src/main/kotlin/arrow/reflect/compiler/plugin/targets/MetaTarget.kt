@@ -18,6 +18,7 @@ data class MetaTarget(
 
   companion object {
     fun find(
+      unresolvedAnnotations: Boolean,
       annotations : Set<String>,
       methodName: String,
       supertype: KClass<*>?,
@@ -26,7 +27,7 @@ data class MetaTarget(
       targets: List<MetaTarget>
     ): MetaTarget? =
       targets.find {
-        (it.annotation.java.canonicalName in annotations) &&
+        (unresolvedAnnotations || it.annotation.java.canonicalName in annotations) &&
         (supertype == null || it.companion.allSuperclasses.any {
           it == supertype
         }) &&
