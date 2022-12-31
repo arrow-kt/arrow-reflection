@@ -41,12 +41,6 @@ public class BoxTestGenerated extends AbstractBoxTest {
     }
 
     @Test
-    @TestMetadata("reflect_test.kt")
-    public void testReflect_test() throws Exception {
-        runTest("src/testData/box/reflect_test.kt");
-    }
-
-    @Test
     @TestMetadata("sample_test.kt")
     public void testSample_test() throws Exception {
         runTest("src/testData/box/sample_test.kt");

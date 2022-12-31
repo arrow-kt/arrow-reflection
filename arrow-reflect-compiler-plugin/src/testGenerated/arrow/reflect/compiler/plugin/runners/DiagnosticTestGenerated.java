@@ -34,6 +34,12 @@ public class DiagnosticTestGenerated extends AbstractDiagnosticTest {
     }
 
     @Test
+    @TestMetadata("reflect_test.kt")
+    public void testReflect_test() throws Exception {
+        runTest("src/testData/diagnostics/reflect_test.kt");
+    }
+
+    @Test
     @TestMetadata("sample_test.kt")
     public void testSample_test() throws Exception {
         runTest("src/testData/diagnostics/sample_test.kt");

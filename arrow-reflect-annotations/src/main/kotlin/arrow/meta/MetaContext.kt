@@ -1,6 +1,5 @@
 package arrow.meta
 
-import arrow.meta.macros.Kotlin
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -140,9 +139,6 @@ abstract class FirMetaContext(
       )
 
   fun source(@Language("kotlin") source: String): String = source
-
-  inline fun <reified Out: FirElement> kotlin(@Language("kotlin") value: String): Kotlin<Out> =
-    Kotlin(Out::class, value)
 
   inline fun <reified Fir : FirElement> compile(@Language("kotlin") source: String): Fir {
     val results = templateCompiler.compileSource(

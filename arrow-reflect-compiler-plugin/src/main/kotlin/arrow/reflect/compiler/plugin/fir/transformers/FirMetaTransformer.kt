@@ -54,12 +54,10 @@ class FirMetaTransformer(
   }
 
   override fun <E : FirElement> transformElement(element: E, data: FirDeclaration): E {
-    val result = if (element is FirAnnotationContainer) {
-      invokeMeta(data, element) ?: element
+    element.transformChildren(this, data)
+    return if (element is FirAnnotationContainer) {
+      invokeMeta(data, element) as E? ?: element
     } else element
-    //val context = element as? FirDeclaration ?: data
-    result.transformChildren(this, data)
-    return result as E
   }
 
 }

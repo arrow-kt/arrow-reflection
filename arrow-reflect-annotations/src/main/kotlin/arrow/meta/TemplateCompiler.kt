@@ -2,6 +2,7 @@ package arrow.meta
 
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
+import org.jetbrains.kotlin.KtInMemoryTextSourceFile
 import org.jetbrains.kotlin.KtIoFileSourceFile
 import org.jetbrains.kotlin.KtSourceFile
 import org.jetbrains.kotlin.backend.jvm.JvmIrDeserializerImpl
@@ -101,27 +102,20 @@ class TemplateCompiler(
     compiling = true
     try {
       val next = counter.incrementAndGet()
-      val fileName = "meta.template_$next.kt"
-      //println("parsing source:\n$source")
+      //val fileName = "meta.template_$next.kt"
+      println("parsing source:\n$source")
       println("session: ${session::class}")
-      val sourceFile = File(templatesFolder, fileName)
-      val allSources =
-        listOf(
-          sourceFile.also {
-            it.writeText(source)
-          }
-        )
       val outputs: ArrayList<FirResult> = arrayListOf()
       val irOutput: ArrayList<Fir2IrResult> = arrayListOf()
       val messageCollector: MessageCollector = MessageCollector.NONE
       for (module in chunk) {
         val moduleConfiguration = projectConfiguration//.applyModuleProperties(module, buildFile)
         val context = CompilationContext(
-          allSources,
+          source,
           messageCollector,
           moduleConfiguration
         )
-        val result = context.compileModule(sourceFile, metaCheckerContext, scopeDeclarations)
+        val result = context.compileModule(metaCheckerContext, scopeDeclarations)
 
         val templateResult = result ?: return TemplateResult(emptyList(), emptyList())
         outputs += templateResult
@@ -138,21 +132,16 @@ class TemplateCompiler(
     }
   }
 
-  private fun CompilationContext.compileModule(
-    sourceFile: File,
-    metaCheckerContext: FirMetaCheckerContext?,
-    scopeDeclarations: List<FirDeclaration>
-  ): FirResult? {
+  private fun CompilationContext.compileModule(metaCheckerContext: FirMetaCheckerContext?, scopeDeclarations: List<FirDeclaration>): FirResult? {
     ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
+    val renderDiagnosticNames = true
     val diagnosticsReporter = DiagnosticReporterFactory.createPendingReporter()
-    val firResult = runFrontend(allSources, diagnosticsReporter, scopeDeclarations)
-    if (firResult == null) {
-      val (source, mappings) = sourceFile.inputStream().reader().use { it.readSourceFileWithMapping() }
-      diagnosticsReporter.diagnosticsByFilePath.entries.forEach { (path, diagnostics) ->
-        diagnostics.forEach {
-          val (line, column) = mappings.getLineAndColumnByOffset(it.element.startOffset)
-          println("error: file://${sourceFile.absolutePath}:$line:$column [" + it.factory.name + "] " + it.factory.ktRenderer.render(it))
-        }
+    val firResult = runFrontend(source, diagnosticsReporter, scopeDeclarations)
+    val diagnosticsContext = metaCheckerContext?.checkerContext
+    if (firResult == null && diagnosticsContext != null) {
+      diagnosticsReporter.diagnostics.forEach {
+        metaCheckerContext.diagnosticReporter.report(it, diagnosticsContext)
+        println("error: [" + it.factory.name + "] " + it.factory.ktRenderer.render(it))
       }
       return null
     }
@@ -172,13 +161,15 @@ class TemplateCompiler(
   }
 
   private fun runFrontend(
-    files: List<File>,
+    source: String,
     diagnosticsReporter: BaseDiagnosticsCollector,
     scopeDeclarations: List<FirDeclaration>,
   ): FirResult? {
     val syntaxErrors = false
     val scope = ScopeSession()
-    val rawFir = session.buildFirViaLightTree(files.map { KtIoFileSourceFile(it) }) // ,.buildFirFromKtFiles(ktFiles)
+    val next = counter.incrementAndGet()
+    val fileName = "meta.template_$next.kt"
+    val rawFir = session.buildFirViaLightTree(listOf(KtInMemoryTextSourceFile(fileName, null, source))) // ,.buildFirFromKtFiles(ktFiles)
     val (scopeSession, fir) = session.runResolution(rawFir, scope, scopeDeclarations)
     session.runCheckers(scopeSession, fir, diagnosticsReporter)
     return if (syntaxErrors || diagnosticsReporter.hasErrors) null else FirResult(
@@ -274,7 +265,7 @@ class TemplateCompiler(
   }
 
   private class CompilationContext(
-    val allSources: List<File>,
+    val source: String,
     val messageCollector: MessageCollector,
     val moduleConfiguration: CompilerConfiguration
   )
@@ -329,21 +320,22 @@ fun FirResolvePhase.createCompilerProcessorByPhase(
   }
 }
 
-@OptIn(AdapterForResolveProcessor::class)
 class FirBodyResolveProcessor(
   session: FirSession,
   scopeSession: ScopeSession,
   scopeDeclarations: List<FirDeclaration>
 ) : FirTransformerBasedResolveProcessor(session, scopeSession, FirResolvePhase.BODY_RESOLVE) {
+
   override val transformer = FirBodyResolveTransformerAdapter(session, scopeSession, scopeDeclarations)
 }
 
-@AdapterForResolveProcessor
+
 class FirBodyResolveTransformerAdapter(
   session: FirSession,
   scopeSession: ScopeSession,
   scopeDeclarations: List<FirDeclaration>
 ) : FirTransformer<Any?>() {
+
   @OptIn(PrivateForInline::class)
   private val transformer = FirBodyResolveTransformer(
     session,

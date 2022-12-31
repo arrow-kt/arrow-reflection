@@ -2,6 +2,7 @@ package arrow.meta.samples
 
 import arrow.meta.FirMetaCheckerContext
 import arrow.meta.FirMetaContext
+import arrow.meta.FirMetaMemberGenerationContext
 import arrow.meta.Meta
 import org.jetbrains.kotlin.KtSourceElement
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -12,18 +13,15 @@ import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.*
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirStatement
-import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
-import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
 import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
 import kotlin.reflect.*
@@ -36,20 +34,18 @@ annotation class Reflect {
   companion object :
     //Meta.FrontendTransformer.RegularClass,
     Meta.FrontendTransformer.GetClassCall,
-    Meta.Generate.TopLevel.Class {
+    Meta.Generate.Members.NestedClasses {
 
-    override fun FirMetaContext.classes(): Set<ClassId> {
-      val reflected = session.predicateBasedProvider.getSymbolsByPredicate(LookupPredicate.create { annotatedOrUnder(FqName(Reflect::class.java.canonicalName)) })
-      return reflected.filterIsInstance<FirClassLikeSymbol<*>>().map { ClassId.fromString(it.classId.asFqNameString().replace(".", "/") + Reflect::class.java.simpleName) }.toSet()
+    override fun FirMetaMemberGenerationContext.nestedClasses(firClass: FirClassSymbol<*>): Set<Name> {
+      println("call to nestedClasses: ${firClass.classId}, annotations: ${firClass.annotations.joinToString()}")
+      return emptySet()
     }
 
-    @OptIn(SymbolInternals::class)
-    override fun FirMetaContext.classes(classId: ClassId): FirClass {
-      val targetClassId = ClassId.fromString(classId.asSingleFqName().asString().removeSuffix(Reflect::class.java.simpleName))
-      val target = session.symbolProvider.getClassLikeSymbolByClassId(targetClassId)?.fir as? FirRegularClass
-
-      return target?.let { compile(kClass(it)) } ?: error("Could not find class $targetClassId")
+    override fun FirMetaMemberGenerationContext.nestedClasses(classId: ClassId): List<FirClass> {
+      return emptyList()
     }
+
+
 
 //    override fun FirMetaMemberGenerationContext.nestedClasses(firClass: FirClassSymbol<*>): Set<Name> {
 //      val isReflected =
