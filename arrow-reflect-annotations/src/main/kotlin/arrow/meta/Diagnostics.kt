@@ -12,6 +12,7 @@ abstract class Diagnostics(val head: KtDiagnosticFactory1<String>, vararg factor
 
   interface Error {
     fun error1(): DiagnosticFactory1DelegateProvider<String> = error1<KtElement, String>()
+    fun warning1(): DiagnosticFactory1DelegateProvider<String> = warning1<KtElement, String>()
   }
 
   init {

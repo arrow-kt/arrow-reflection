@@ -1,0 +1,18 @@
+FILE: immutable_test.kt
+    @FILE:R|arrow/meta/samples/Immutable|()
+    package foo.bar
+
+    public final class Sample : R|kotlin/Any| {
+        public constructor(foo: R|kotlin/Int|): R|foo/bar/Sample| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final var foo: R|kotlin/Int| = R|<local>/foo|
+            public get(): R|kotlin/Int|
+            public set(value: R|kotlin/Int|): R|kotlin/Unit|
+
+    }
+    public final fun foo(): R|kotlin/Unit| {
+        lvar x: R|kotlin/Int| = Int(0)
+        lval l: R|kotlin/collections/MutableList<kotlin/Int>| = R|kotlin/collections/mutableListOf|<R|kotlin/Int|>()
+    }

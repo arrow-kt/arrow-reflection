@@ -49,4 +49,5 @@ sourceSets {
 dependencies {
   compileOnly(libs.kotlin.compiler)
   kotlinCompilerPluginClasspath(libs.kotlin.compiler)
+  implementation("com.lilittlecat:chatgpt:0.1.0")
 }
