@@ -9,22 +9,18 @@ plugins {
 }
 
 application {
-  mainClass.set("foo.bar.SampleKt")
+  mainClass.set("example.SampleKt")
 }
 
 tasks.withType<KotlinCompile>().configureEach {
-  kotlinOptions {
-    useK2 = true
-    freeCompilerArgs +=
-      listOf(
-        "-Xcontext-receivers",
-       // "-Xplugin=$rootDir/arrow-inject-compiler-plugin/build/libs/arrow-reflect-compiler-plugin-0.1.0.jar"
-        )
+  compilerOptions {
+    useK2.set(true)
+    freeCompilerArgs.add("-Xcontext-receivers")
   }
 }
 
 dependencies {
-  //implementation(project(":arrow-reflect-annotations"))
+  // implementation(project(":arrow-reflect-annotations"))
   implementation("io.arrow-kt:arrow-reflect-annotations:0.1.0")
   kotlinCompilerPluginClasspath("org.jetbrains.kotlin:kotlin-compiler:$kotlinVersion")
 }

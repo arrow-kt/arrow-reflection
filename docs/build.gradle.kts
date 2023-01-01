@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.arrowGradleConfig.kotlin)
@@ -13,7 +15,9 @@ tasks {
     delete("$rootDir/docs/docs/apidocs")
   }
 
-  compileKotlin {
-    kotlinOptions.freeCompilerArgs += listOf("-Xskip-runtime-version-check")
+  withType<KotlinCompile>().configureEach {
+    compilerOptions {
+      freeCompilerArgs.add("-Xskip-runtime-version-check")
+    }
   }
 }

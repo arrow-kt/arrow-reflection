@@ -27,8 +27,6 @@ internal fun FirMetaCheckerContext.createLocalCallGraph(
   } else existingReference
 }
 
-
-@OptIn(SymbolInternals::class)
 private fun FirSimpleFunction.calledMethods(): Map<FirFunctionCall, FirSimpleFunction> {
   val calledMethods = mutableMapOf<FirFunctionCall, FirSimpleFunction>()
   val visitor = object : FirVisitorVoid() {

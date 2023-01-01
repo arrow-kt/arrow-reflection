@@ -12,14 +12,14 @@ annotation class Product {
 
     override fun FirMetaMemberGenerationContext.newFunctions(firClass: FirClass): Map<String, () -> String> =
       mapOf(
-        "product" to {
-          //language=kotlin
-          """|
-             |fun product(): List<Pair<String, *>> = 
-             |  listOf(${propertiesOf(firClass) { """"${+it.name}" to this.${+it.name}""" }})
-          """.trimMargin()
-        }
+        "product" to
+          {
+            // language=kotlin
+            """
+              fun product(): List<Pair<String, *>> =               
+                listOf(${propertiesOf(firClass) { """"${+it.name}" to this.${+it.name}""" }})
+            """
+          }
       )
-
   }
 }
