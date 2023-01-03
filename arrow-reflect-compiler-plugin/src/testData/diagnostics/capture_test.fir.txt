@@ -1,0 +1,25 @@
+FILE: capture_test.kt
+    package foo.bar
+
+    public abstract interface Raise<in E> : R|kotlin/Any| {
+        @R|arrow/meta/samples/DisallowLambdaCapture|(msg = String(It's unsafe to capture `raise` inside non-inline anonymous functions)) public abstract fun raise(e: R|E|): R|kotlin/Nothing|
+
+    }
+    context(R|foo/bar/Raise<kotlin/String>|)
+    public final fun shouldNotCature(): R|() -> kotlin/Unit| {
+        ^shouldNotCature fun <anonymous>(): R|kotlin/Unit| <inline=Unknown>  {
+            this@R|foo/bar/shouldNotCature|.R|SubstitutionOverride<foo/bar/Raise.raise: R|kotlin/Nothing|>|(String(boom))
+        }
+
+    }
+    context(R|foo/bar/Raise<kotlin/String>|)
+    public final fun inlineCaptureOk(): R|kotlin/Unit| {
+        R|kotlin/collections/listOf|<R|kotlin/Int|>(vararg(Int(1), Int(2), Int(3))).R|kotlin/collections/map|<R|kotlin/Int|, R|kotlin/Nothing|>(<L> = map@fun <anonymous>(it: R|kotlin/Int|): R|kotlin/Nothing| <inline=Inline, kind=UNKNOWN>  {
+            this@R|foo/bar/inlineCaptureOk|.R|SubstitutionOverride<foo/bar/Raise.raise: R|kotlin/Nothing|>|(String(boom))
+        }
+        )
+    }
+    context(R|foo/bar/Raise<kotlin/String>|)
+    public final fun ok(): R|kotlin/Unit| {
+        this@R|foo/bar/ok|.R|SubstitutionOverride<foo/bar/Raise.raise: R|kotlin/Nothing|>|(String(boom))
+    }

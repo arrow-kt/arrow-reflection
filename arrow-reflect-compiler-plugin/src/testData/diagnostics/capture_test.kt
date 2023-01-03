@@ -3,13 +3,12 @@ package foo.bar
 import arrow.meta.samples.DisallowLambdaCapture
 
 interface Raise<in E> {
-  @DisallowLambdaCapture("It's unsafe to capture `raise` inside non-inline anonymous functions")
-  fun raise(e: E): Nothing
+  @DisallowLambdaCapture("It's unsafe to capture `raise` inside non-inline anonymous functions") fun raise(e: E): Nothing
 }
 
 context(Raise<String>)
 fun shouldNotCature(): () -> Unit {
-  return { raise("boom") }
+  return { <!UnsafeCaptureDetected!>raise("boom")<!> }
 }
 
 context(Raise<String>)
