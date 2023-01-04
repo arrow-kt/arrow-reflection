@@ -9,6 +9,7 @@ import kotlin.reflect.KClass
 class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
 
   inline operator fun <reified In1, reified In2, reified In3, reified Out> invoke(
+    unresolvedAnnotations: Boolean,
     metaContext: FirMetaContext,
     annotations: List<FirAnnotation>,
     superType: KClass<*>,
@@ -20,6 +21,7 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
     val args = listOf(In1::class, In2::class, In3::class)
     val retType = Out::class
     return MetaTarget.find(
+      unresolvedAnnotations,
       annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
       methodName,
       superType,
@@ -33,6 +35,7 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
   }
 
   inline operator fun <reified Out> invoke(
+    unresolvedAnnotations: Boolean,
     metaContext: FirMetaContext,
     annotations: List<FirAnnotation>,
     superType: KClass<*>,
@@ -41,6 +44,7 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
     val args = emptyList<KClass<*>>()
     val retType = Out::class
     return MetaTarget.find(
+      unresolvedAnnotations,
       annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
       methodName,
       superType,
@@ -55,6 +59,7 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
   }
 
   inline operator fun <reified In, reified Out> invoke(
+    unresolvedAnnotations: Boolean,
     metaContext: FirMetaContext,
     annotations: List<FirAnnotation>,
     superType: KClass<*>,
@@ -64,6 +69,7 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
     val args = listOf(In::class)
     val retType = Out::class
     return MetaTarget.find(
+      unresolvedAnnotations,
       annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
       methodName,
       superType,
@@ -78,6 +84,7 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
   }
 
   inline operator fun <reified In1, reified In2, reified Out> invoke(
+    unresolvedAnnotations: Boolean,
     metaContext: FirMetaContext,
     annotations: List<FirAnnotation>,
     superType: KClass<*>,
@@ -88,6 +95,7 @@ class MetaInvoke(val session: FirSession, val metaTargets: List<MetaTarget>) {
     val args = listOf(In1::class, In2::class)
     val retType = Out::class
     return MetaTarget.find(
+      unresolvedAnnotations,
       annotations.mapNotNull { it.fqName(session)?.asString() }.toSet(),
       methodName,
       superType,

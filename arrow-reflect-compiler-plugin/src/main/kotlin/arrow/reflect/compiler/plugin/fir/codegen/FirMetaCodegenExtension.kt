@@ -38,22 +38,36 @@ class FirMetaCodegenExtension(
     FirMetaMemberGenerationContext(templateCompiler, session, generationContext)
 
   override fun generateClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*>? {
-    val annotations =
-      session.symbolProvider
-        .getClassLikeSymbolByClassId(classId)
-        ?.fir
-        ?.metaAnnotations(session)
-        .orEmpty()
-    val firClass: FirClass? =
-      invokeMeta(metaContext(null), annotations, Meta.Generate.TopLevel.Class::class, "classes", classId)
-    return firClass?.symbol ?: super.generateClassLikeDeclaration(classId)
+    val x = 0
+    return if (!templateCompiler.compiling) {
+      val firClass: FirClass? =
+        if (!classId.isNestedClass)
+          invokeMeta(true, metaContext(null), emptyList(), Meta.Generate.TopLevel.Class::class, "classes", classId)
+        else
+          invokeMeta(
+            true,
+            metaContext(null),
+            emptyList(),
+            Meta.Generate.Members.NestedClasses::class,
+            "nestedClasses",
+            classId
+          )
+      firClass?.symbol ?: super.generateClassLikeDeclaration(classId)
+    } else null
   }
 
   override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> {
     return if (context.owner.isMetaAnnotated()) {
       val annotations = context.owner.fir.metaAnnotations(session)
       val constructors: List<FirConstructor>? =
-        invokeMeta(metaContext(context), annotations, Meta.Generate.Members.Constructors::class, "constructors", context)
+        invokeMeta(
+          false,
+          metaContext(context),
+          annotations,
+          Meta.Generate.Members.Constructors::class,
+          "constructors",
+          context
+        )
       constructors?.map { it.symbol } ?: super.generateConstructors(context)
     } else super.generateConstructors(context)
   }
@@ -81,8 +95,8 @@ class FirMetaCodegenExtension(
       val superType = Meta.Generate.Members.Functions::class
       val metaAnnotations = context.owner.fir.metaAnnotations(session)
       val functions: List<FirSimpleFunction>? =
-        invokeMeta(metaContext(context), metaAnnotations, superType, "functions", callableId, context)
-          ?: invokeMeta(metaContext(context), metaAnnotations, superType, "functions", context)
+        invokeMeta(false, metaContext(context), metaAnnotations, superType, "functions", callableId, context)
+          ?: invokeMeta(false, metaContext(context), metaAnnotations, superType, "functions", context)
       val decls = context.owner.fir.declarations as? MutableList<FirDeclaration>
       val patched = patchedfunctions(functions, callableId, context)
 
@@ -121,8 +135,8 @@ class FirMetaCodegenExtension(
       val superType = Meta.Generate.Members.Properties::class
       val metaAnnotations = context.owner.fir.metaAnnotations(session)
       val properties: List<FirProperty>? =
-        invokeMeta(metaContext(context), metaAnnotations, superType, "properties", callableId, context)
-          ?: invokeMeta(metaContext(context), metaAnnotations, superType, "properties", context)
+        invokeMeta(false, metaContext(context), metaAnnotations, superType, "properties", callableId, context)
+          ?: invokeMeta(false, metaContext(context), metaAnnotations, superType, "properties", context)
       properties?.map { it.symbol } ?: super.generateProperties(callableId, context)
     } else super.generateProperties(callableId, context)
   }
@@ -135,6 +149,7 @@ class FirMetaCodegenExtension(
   fun functions(classSymbol: FirClassSymbol<*>): Set<Name>? =
     if (classSymbol.isMetaAnnotated())
       invokeMeta(
+        false,
         metaContext(null),
         classSymbol.fir.metaAnnotations(session),
         Meta.Generate.Members.Functions::class,
@@ -148,6 +163,7 @@ class FirMetaCodegenExtension(
   fun properties(classSymbol: FirClassSymbol<*>): Set<Name>? =
     if (classSymbol.isMetaAnnotated())
       invokeMeta(
+        false,
         metaContext(null),
         classSymbol.fir.metaAnnotations(session),
         Meta.Generate.Members.Properties::class,
@@ -159,6 +175,7 @@ class FirMetaCodegenExtension(
   fun constructors(classSymbol: FirClassSymbol<*>): Set<Name>? =
     if (classSymbol.isMetaAnnotated())
       invokeMeta(
+        false,
         metaContext(null),
         classSymbol.fir.metaAnnotations(session),
         Meta.Generate.Members.Constructors::class,
@@ -168,27 +185,29 @@ class FirMetaCodegenExtension(
     else null
 
   fun nestedClasses(classSymbol: FirClassSymbol<*>): Set<Name>? =
-    if (classSymbol.isMetaAnnotated())
-      invokeMeta(
-        metaContext(null),
-        classSymbol.fir.metaAnnotations(session),
-        Meta.Generate.Members.NestedClasses::class,
-        "nestedClasses",
-        classSymbol,
-      )
-    else null
+    //if (classSymbol.isMetaAnnotated()) // TODO() can't lookup annotations on this phases are they are not resolved
+    invokeMeta(
+      true, // can't resolve annotations here
+      metaContext(null),
+      classSymbol.fir.metaAnnotations(session),
+      Meta.Generate.Members.NestedClasses::class,
+      "nestedClasses",
+      classSymbol,
+    )
+  // else null
 
   override fun getNestedClassifiersNames(classSymbol: FirClassSymbol<*>): Set<Name> =
     nestedClasses(classSymbol).orEmpty()
 
   fun topLevelFunctions(): Set<CallableId>? =
-    invokeMeta(metaContext(null), emptyList(), Meta.Generate.TopLevel.Functions::class, "functions")
+    // TODO maybe in all top levels we can't resolve annotations and need a global approach
+    invokeMeta(false, metaContext(null), emptyList(), Meta.Generate.TopLevel.Functions::class, "functions")
 
   fun topLevelClasses(): Set<ClassId>? =
-    invokeMeta(metaContext(null), emptyList(), Meta.Generate.TopLevel.Class::class, "classes")
+    invokeMeta(true, metaContext(null), emptyList(), Meta.Generate.TopLevel.Class::class, "classes")
 
   fun topLevelProperties(): Set<CallableId>? =
-    invokeMeta(metaContext(null), emptyList(), Meta.Generate.TopLevel.Properties::class, "properties")
+    invokeMeta(false, metaContext(null), emptyList(), Meta.Generate.TopLevel.Properties::class, "properties")
 
   override fun getTopLevelCallableIds(): Set<CallableId> =
     topLevelProperties().orEmpty() + topLevelFunctions().orEmpty()
@@ -199,6 +218,7 @@ class FirMetaCodegenExtension(
   override fun hasPackage(packageFqName: FqName): Boolean {
     return true
   }
+
 
   val metaAnnotatedPredicate: DeclarationPredicate
     get() = DeclarationPredicate.create { metaAnnotated(AnnotationFqn("arrow.meta.Meta")) }

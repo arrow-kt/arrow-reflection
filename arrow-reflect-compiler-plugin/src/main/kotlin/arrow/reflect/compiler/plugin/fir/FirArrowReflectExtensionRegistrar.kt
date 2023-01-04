@@ -20,4 +20,6 @@ class FirArrowReflectExtensionRegistrar(val templateCompiler: TemplateCompiler, 
       FirMetaAdditionalCheckersExtension(session, templateCompiler, metaTargets)
     }
   }
+
 }
+

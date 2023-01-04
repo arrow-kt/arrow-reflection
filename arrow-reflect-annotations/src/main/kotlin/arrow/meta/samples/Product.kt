@@ -1,6 +1,6 @@
 package arrow.meta.samples
 
-import arrow.meta.FirMetaContext
+import arrow.meta.FirMetaMemberGenerationContext
 import arrow.meta.Meta
 import org.jetbrains.kotlin.fir.declarations.*
 
@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.fir.declarations.*
 annotation class Product {
   companion object : Meta.Generate.Members.Functions {
 
-    override fun FirMetaContext.newFunctions(firClass: FirClass): Map<String, () -> String> =
+    override fun FirMetaMemberGenerationContext.newFunctions(firClass: FirClass): Map<String, () -> String> =
       mapOf(
         "product" to
           {

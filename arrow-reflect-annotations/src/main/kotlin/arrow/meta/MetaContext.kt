@@ -11,15 +11,21 @@ import org.jetbrains.kotlin.diagnostics.reportOn
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.declarations.builder.buildRegularClassCopy
+import org.jetbrains.kotlin.fir.declarations.utils.addDeclaration
+import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.expressions.FirCall
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
+import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.FirTypeRef
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.renderReadableWithFqNames
 import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.text
 import kotlin.reflect.KClass
@@ -61,6 +67,33 @@ abstract class FirMetaContext(
 
   abstract val scopeDeclarations: List<FirDeclaration>
 
+  fun FirClass.addDeclarations(vararg declarations: FirDeclaration): FirClass {
+    val result = if (this is FirRegularClass) {
+      buildRegularClassCopy(this) {
+        declarations.forEach {
+          when (it) {
+            is FirRegularClass -> {
+              addDeclaration(buildRegularClassCopy(it) {
+                resolvePhase = FirResolvePhase.BODY_RESOLVE
+                symbol = FirRegularClassSymbol(ClassId.fromString(classId.asString() + "." + it.name.asString()))
+              })
+            }
+            else -> {}
+          }
+        }
+      }
+    } else this
+    return result
+  }
+
+  fun FirClassSymbol<*>.hasCompanion(): Boolean = this.companion() != null
+
+  @OptIn(SymbolInternals::class)
+  fun FirClassSymbol<*>.companion(): FirClass? =
+    fir.declarations.filterIsInstance<FirClass>()
+      .firstOrNull { it.classId.shortClassName == Name.identifier("Companion") }
+
+  @OptIn(SymbolInternals::class)
   fun propertiesOf(firClass: FirClass, f: (FirValueParameter) -> String): String =
     +firClass.primaryConstructorIfAny(session)?.fir?.valueParameters.orEmpty().filter { it.isVal }.map {
       f(it)
@@ -68,15 +101,33 @@ abstract class FirMetaContext(
 
   val String.function: FirSimpleFunction
     get() {
-      val results = templateCompiler.compileSource(this@FirMetaContext as? FirMetaCheckerContext, this, extendedAnalysisMode = false, scopeDeclarations)
+      val results = templateCompiler.compileSource(
+        this@FirMetaContext as? FirMetaCheckerContext,
+        this,
+        extendedAnalysisMode = false,
+        scopeDeclarations
+      )
       val firFiles = results.firResults.flatMap { it.files }
       val currentElement: FirSimpleFunction? = findSelectedFirElement(FirSimpleFunction::class, firFiles)
       return currentElement ?: error("Could not find a ${FirSimpleFunction::class}")
     }
 
+  val String.constructor: FirConstructor
+    get() {
+      val results = templateCompiler.compileSource(
+        this@FirMetaContext as? FirMetaCheckerContext,
+        this,
+        extendedAnalysisMode = false,
+        scopeDeclarations
+      )
+      val firFiles = results.firResults.flatMap { it.files }
+      val currentElement: FirConstructor? = findSelectedFirElement(FirConstructor::class, firFiles)
+      return currentElement ?: error("Could not find a ${FirSimpleFunction::class}")
+    }
+
   operator fun FirElement.unaryPlus(): String =
-    source?.text?.toString()
-      ?: (this as? FirTypeRef)?.coneType?.renderReadableWithFqNames()?.replace("/", ".")
+    (this as? FirTypeRef)?.coneType?.renderReadableWithFqNames()?.replace("/", ".")
+      ?: source?.text?.toString()
       ?: error("$this has no source psi text element")
 
   val String.call: FirCall
@@ -87,15 +138,28 @@ abstract class FirMetaContext(
             """
       )
 
+  fun source(@Language("kotlin") source: String): String = source
+
   inline fun <reified Fir : FirElement> compile(@Language("kotlin") source: String): Fir {
-    val results = templateCompiler.compileSource(this@FirMetaContext as? FirMetaCheckerContext, source, extendedAnalysisMode = false, scopeDeclarations)
+    val results = templateCompiler.compileSource(
+      this@FirMetaContext as? FirMetaCheckerContext,
+      source,
+      extendedAnalysisMode = false,
+      scopeDeclarations
+    )
     val firFiles = results.firResults.flatMap { it.files }
     val currentElement: Fir? = findSelectedFirElement(Fir::class, firFiles)
-    return currentElement ?: error("Could not find a ${Fir::class}")
+    return currentElement ?: errorNotFound(Fir::class)
   }
 
+  fun errorNotFound(fir: KClass<out FirElement>): Nothing =
+    error("Could not find a ${fir::class}")
+
   @PublishedApi
-  internal fun <Fir : FirElement> findSelectedFirElement(firElementClass: KClass<Fir>, firFiles: List<FirFile>): Fir? {
+  internal fun <Fir : FirElement> findSelectedFirElement(
+    firElementClass: KClass<Fir>,
+    firFiles: List<FirFile>
+  ): Fir? {
     var currentElement: Fir? = null
     firFiles.forEach { firFile ->
       firFile.accept(object : FirVisitorVoid() {
@@ -122,7 +186,8 @@ class FirMetaCheckerContext(
   override val templateCompiler: TemplateCompiler,
   override val session: FirSession,
   val checkerContext: CheckerContext,
-  val diagnosticReporter: DiagnosticReporter
+  val diagnosticReporter: DiagnosticReporter,
+  val additionalContext: FirDeclaration? = null,
 ) : FirMetaContext(session, templateCompiler) {
 
   fun FirElement.report(factory: KtDiagnosticFactory1<String>, msg: String) {
@@ -136,7 +201,7 @@ class FirMetaCheckerContext(
   }
 
   override val scopeDeclarations: List<FirDeclaration>
-    get() = checkerContext.containingDeclarations
+    get() = checkerContext.containingDeclarations + listOfNotNull(additionalContext)
 }
 
 class FirMetaMemberGenerationContext(
@@ -145,6 +210,8 @@ class FirMetaMemberGenerationContext(
   val memberGenerationContext: MemberGenerationContext?,
 ) : FirMetaContext(session, templateCompiler) {
 
+  @OptIn(SymbolInternals::class)
   override val scopeDeclarations: List<FirDeclaration>
     get() = listOfNotNull(memberGenerationContext?.owner?.fir)
 }
+

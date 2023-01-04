@@ -1,17 +1,17 @@
 package arrow.meta
 
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFile
+import org.jetbrains.kotlin.KtInMemoryTextSourceFile
 import org.jetbrains.kotlin.KtIoFileSourceFile
 import org.jetbrains.kotlin.KtSourceFile
 import org.jetbrains.kotlin.backend.jvm.JvmIrDeserializerImpl
-import org.jetbrains.kotlin.cli.common.fir.FirDiagnosticsCompilerResultsReporter
 import org.jetbrains.kotlin.cli.common.messages.*
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.modules.ModuleBuilder
 import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
-import org.jetbrains.kotlin.diagnostics.DiagnosticReporterFactory
-import org.jetbrains.kotlin.diagnostics.DiagnosticUtils
+import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.collectors.FirDiagnosticsCollector
@@ -20,19 +20,13 @@ import org.jetbrains.kotlin.fir.backend.jvm.JvmFir2IrExtensions
 import org.jetbrains.kotlin.fir.builder.BodyBuildingMode
 import org.jetbrains.kotlin.fir.builder.RawFirBuilder
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
-import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
-import org.jetbrains.kotlin.fir.expressions.builder.buildConstExpression
-import org.jetbrains.kotlin.fir.expressions.impl.FirAnnotationArgumentMappingImpl
 import org.jetbrains.kotlin.fir.lightTree.LightTree2Fir
-import org.jetbrains.kotlin.fir.pipeline.buildFirViaLightTree
 import org.jetbrains.kotlin.fir.pipeline.convertToIr
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.calls.ImplicitDispatchReceiverValue
 import org.jetbrains.kotlin.fir.resolve.dfa.DataFlowAnalyzerContext
 import org.jetbrains.kotlin.fir.resolve.providers.firProvider
 import org.jetbrains.kotlin.fir.resolve.providers.impl.FirProviderImpl
-import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.resolve.transformers.*
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.BodyResolveContext
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.FirBodyResolveTransformer
@@ -47,24 +41,16 @@ import org.jetbrains.kotlin.fir.scopes.impl.FirLocalScope
 import org.jetbrains.kotlin.fir.scopes.impl.FirPackageMemberScope
 import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
 import org.jetbrains.kotlin.fir.session.sourcesToPathsMapper
+import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
-import org.jetbrains.kotlin.fir.types.ConeLookupTagBasedType
-import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
+import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.incremental.createDirectory
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmIrMangler
 import org.jetbrains.kotlin.modules.Module
-import org.jetbrains.kotlin.name.CallableId
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus
-import org.jetbrains.kotlin.psi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.readSourceFileWithMapping
-import org.jetbrains.kotlin.types.ConstantValueKind
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -116,22 +102,16 @@ class TemplateCompiler(
     compiling = true
     try {
       val next = counter.incrementAndGet()
-      val fileName = "meta.template_$next.kt"
+      //val fileName = "meta.template_$next.kt"
       println("parsing source:\n$source")
       println("session: ${session::class}")
-      val allSources =
-        listOf(
-          File(templatesFolder, fileName).also {
-            it.writeText(source)
-          }
-        )
       val outputs: ArrayList<FirResult> = arrayListOf()
       val irOutput: ArrayList<Fir2IrResult> = arrayListOf()
       val messageCollector: MessageCollector = MessageCollector.NONE
       for (module in chunk) {
         val moduleConfiguration = projectConfiguration//.applyModuleProperties(module, buildFile)
         val context = CompilationContext(
-          allSources,
+          source,
           messageCollector,
           moduleConfiguration
         )
@@ -156,7 +136,7 @@ class TemplateCompiler(
     ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
     val renderDiagnosticNames = true
     val diagnosticsReporter = DiagnosticReporterFactory.createPendingReporter()
-    val firResult = runFrontend(allSources, diagnosticsReporter, scopeDeclarations)
+    val firResult = runFrontend(source, diagnosticsReporter, scopeDeclarations)
     val diagnosticsContext = metaCheckerContext?.checkerContext
     if (firResult == null && diagnosticsContext != null) {
       diagnosticsReporter.diagnostics.forEach {
@@ -181,13 +161,15 @@ class TemplateCompiler(
   }
 
   private fun runFrontend(
-    files: List<File>,
+    source: String,
     diagnosticsReporter: BaseDiagnosticsCollector,
     scopeDeclarations: List<FirDeclaration>,
   ): FirResult? {
     val syntaxErrors = false
     val scope = ScopeSession()
-    val rawFir = session.buildFirViaLightTree(files.map { KtIoFileSourceFile(it) }) // ,.buildFirFromKtFiles(ktFiles)
+    val next = counter.incrementAndGet()
+    val fileName = "meta.template_$next.kt"
+    val rawFir = session.buildFirViaLightTree(listOf(KtInMemoryTextSourceFile(fileName, null, source))) // ,.buildFirFromKtFiles(ktFiles)
     val (scopeSession, fir) = session.runResolution(rawFir, scope, scopeDeclarations)
     session.runCheckers(scopeSession, fir, diagnosticsReporter)
     return if (syntaxErrors || diagnosticsReporter.hasErrors) null else FirResult(
@@ -283,7 +265,7 @@ class TemplateCompiler(
   }
 
   private class CompilationContext(
-    val allSources: List<File>,
+    val source: String,
     val messageCollector: MessageCollector,
     val moduleConfiguration: CompilerConfiguration
   )
@@ -354,6 +336,7 @@ class FirBodyResolveTransformerAdapter(
   scopeDeclarations: List<FirDeclaration>
 ) : FirTransformer<Any?>() {
 
+  @OptIn(PrivateForInline::class)
   private val transformer = FirBodyResolveTransformer(
     session,
     phase = FirResolvePhase.BODY_RESOLVE,
