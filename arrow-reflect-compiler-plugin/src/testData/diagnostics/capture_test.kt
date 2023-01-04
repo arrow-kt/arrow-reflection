@@ -7,13 +7,18 @@ interface Raise<in E> {
 }
 
 context(Raise<String>)
-fun shouldNotCature(): () -> Unit {
+fun shouldNotCapture(): () -> Unit {
   return { <!UnsafeCaptureDetected!>raise("boom")<!> }
 }
 
 context(Raise<String>)
 fun inlineCaptureOk(): Unit {
   listOf(1, 2, 3).map { raise("boom") }
+}
+
+context(Raise<String>)
+fun leakedNotOk(): () -> Unit = {
+  listOf(1, 2, 3).map { <!UnsafeCaptureDetected!>raise("boom")<!> }
 }
 
 context(Raise<String>)
