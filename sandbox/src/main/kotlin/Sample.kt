@@ -9,7 +9,7 @@ interface Raise<in E> {
 }
 
 context(Raise<String>)
-fun shouldNotCature(): () -> Unit {
+fun shouldNotCapture(): () -> Unit {
   return { raise("boom") }
 }
 

@@ -4,6 +4,7 @@ import arrow.meta.Diagnostics
 import arrow.meta.FirMetaCheckerContext
 import arrow.meta.Meta
 import arrow.meta.samples.DisallowLambdaCaptureErrors.UnsafeCaptureDetected
+import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirAnonymousFunction
 import org.jetbrains.kotlin.fir.declarations.InlineStatus
 import org.jetbrains.kotlin.fir.declarations.findArgumentByName
@@ -16,9 +17,6 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.ConstantValueKind
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 object DisallowLambdaCaptureErrors : Diagnostics.Error {
   val UnsafeCaptureDetected by error1()
@@ -34,12 +32,12 @@ annotation class DisallowLambdaCapture(val msg: String = "") {
 
     override fun FirMetaCheckerContext.check(expression: FirFunctionCall) {
       val nameArg = expression
-        .disallowLambdaCaptureAnnotation()?.findArgumentByName(Name.identifier(DisallowLambdaCapture::msg.name))
+        .disallowLambdaCaptureAnnotation(session)?.findArgumentByName(Name.identifier(DisallowLambdaCapture::msg.name))
       val userMsg =
         if (nameArg is FirConstExpression<*> && nameArg.kind == ConstantValueKind.String) nameArg.value as? String
         else null
       scopeDeclarations.filterIsInstance<FirAnonymousFunction>().forEach { scope ->
-        if (scope != null && scope.inlineStatus != InlineStatus.Inline) {
+        if (scope.inlineStatus != InlineStatus.Inline) {
           expression.report(
             UnsafeCaptureDetected,
             userMsg
@@ -49,12 +47,13 @@ annotation class DisallowLambdaCapture(val msg: String = "") {
       }
     }
 
-    private fun FirFunctionCall.disallowLambdaCaptureAnnotation(): FirAnnotation? =
+    private fun FirFunctionCall.disallowLambdaCaptureAnnotation(session: FirSession): FirAnnotation? =
       toResolvedCallableSymbol()?.fir?.getAnnotationByClassId(
         ClassId(
           FqName(annotation.`package`.name),
           Name.identifier(annotation.simpleName)
-        )
+        ),
+        session
       )
   }
 }
