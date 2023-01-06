@@ -10,5 +10,6 @@ interface MetaModule: Module {
   val decorator: Decorator
   val pure: Pure
   val immutable: Immutable
+  val disallowLambdaCapture: DisallowLambdaCapture
 }
 

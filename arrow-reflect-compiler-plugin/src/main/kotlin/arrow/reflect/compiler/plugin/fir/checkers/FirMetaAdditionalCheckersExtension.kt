@@ -58,25 +58,42 @@ class FirMetaAdditionalCheckersExtension(
   }
 
   private inline fun <reified E : FirElement> invokeChecker(
-      superType: KClass<*>,
-      element: E,
-      session: FirSession,
-      context: CheckerContext,
-      reporter: DiagnosticReporter
+    superType: KClass<*>,
+    element: E,
+    session: FirSession,
+    context: CheckerContext,
+    reporter: DiagnosticReporter
   ) {
-    if (element is FirAnnotationContainer && element.isMetaAnnotated(session)) {
-        val annotations = element.metaAnnotations(session)
-        val metaContext = FirMetaCheckerContext(templateCompiler, session, context, reporter)
-        invokeMeta<E, Unit>(
-          false,
-          metaContext,
-          annotations,
-          superType = superType,
-          methodName = "check",
-          element
-        )
-      }
+    if ((element is FirAnnotationContainer && element.isMetaAnnotated(session)) || (element is FirFunctionCall && element.isCallToAnnotatedFunction(
+        session
+      ))
+    ) {
+      val annotations =
+        when (element) {
+          is FirFunctionCall ->
+            element.metaAnnotations(session) + element.toResolvedCallableSymbol()?.fir?.metaAnnotations(
+              session
+            ).orEmpty()
+          is FirAnnotationContainer -> element.metaAnnotations(session)
+          else -> emptyList()
+        }
+      val metaContext = FirMetaCheckerContext(templateCompiler, session, context, reporter)
+      invokeMeta<E, Unit>(
+        false,
+        metaContext,
+        annotations,
+        superType = superType,
+        methodName = "check",
+        element
+      )
     }
+  }
+
+  private inline fun <reified E : FirFunctionCall> E.isCallToAnnotatedFunction(
+    session: FirSession
+  ): Boolean {
+    return toResolvedCallableSymbol()?.fir?.isMetaAnnotated(session) == true
+  }
 
   override val typeCheckers: TypeCheckers
     get() = super.typeCheckers
