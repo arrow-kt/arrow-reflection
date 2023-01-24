@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -26,6 +27,43 @@ tasks {
   dokkaHtml { enabled = false }
   dokkaJavadoc { enabled = false }
   dokkaJekyll { enabled = false }
+
+  withType<JavaCompile>().configureEach {
+    sourceCompatibility = "${JavaVersion.VERSION_1_8}"
+    targetCompatibility = "${JavaVersion.VERSION_1_8}"
+  }
+
+  withType<KotlinCompile>().configureEach {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.JVM_1_8)
+      useK2.set(true)
+      freeCompilerArgs.add("-Xcontext-receivers")
+    }
+  }
+
+  create<JavaExec>("generateTests") {
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("arrow.reflect.compiler.plugin.GenerateTestsKt")
+
+    dependsOn(":arrow-reflect-annotations:jar")
+  }
+
+  test {
+    testLogging { showStandardStreams = true }
+
+    useJUnitPlatform()
+    doFirst {
+      setLibraryProperty("org.jetbrains.kotlin.test.kotlin-stdlib", "kotlin-stdlib")
+      setLibraryProperty("org.jetbrains.kotlin.test.kotlin-stdlib-jdk8", "kotlin-stdlib-jdk8")
+      setLibraryProperty("org.jetbrains.kotlin.test.kotlin-reflect", "kotlin-reflect")
+      setLibraryProperty("org.jetbrains.kotlin.test.kotlin-test", "kotlin-test")
+      setLibraryProperty("org.jetbrains.kotlin.test.kotlin-script-runtime", "kotlin-script-runtime")
+      setLibraryProperty("org.jetbrains.kotlin.test.kotlin-annotations-jvm", "kotlin-annotations-jvm")
+    }
+
+    dependsOn("generateTests")
+    dependsOn(":arrow-reflect-annotations:jar")
+  }
 }
 
 sourceSets {
@@ -57,37 +95,6 @@ dependencies {
   testImplementation("org.junit.platform:junit-platform-launcher")
   testImplementation("org.junit.platform:junit-platform-runner")
   testImplementation("org.junit.platform:junit-platform-suite-api")
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-  compilerOptions {
-    useK2.set(true)
-    freeCompilerArgs.add("-Xcontext-receivers")
-  }
-}
-
-tasks.create<JavaExec>("generateTests") {
-  classpath = sourceSets.test.get().runtimeClasspath
-  mainClass.set("arrow.reflect.compiler.plugin.GenerateTestsKt")
-
-  dependsOn(":arrow-reflect-annotations:jar")
-}
-
-tasks.test {
-  testLogging { showStandardStreams = true }
-
-  useJUnitPlatform()
-  doFirst {
-    setLibraryProperty("org.jetbrains.kotlin.test.kotlin-stdlib", "kotlin-stdlib")
-    setLibraryProperty("org.jetbrains.kotlin.test.kotlin-stdlib-jdk8", "kotlin-stdlib-jdk8")
-    setLibraryProperty("org.jetbrains.kotlin.test.kotlin-reflect", "kotlin-reflect")
-    setLibraryProperty("org.jetbrains.kotlin.test.kotlin-test", "kotlin-test")
-    setLibraryProperty("org.jetbrains.kotlin.test.kotlin-script-runtime", "kotlin-script-runtime")
-    setLibraryProperty("org.jetbrains.kotlin.test.kotlin-annotations-jvm", "kotlin-annotations-jvm")
-  }
-
-  dependsOn("generateTests")
-  dependsOn(":arrow-reflect-annotations:jar")
 }
 
 fun Test.setLibraryProperty(propName: String, jarName: String) {
