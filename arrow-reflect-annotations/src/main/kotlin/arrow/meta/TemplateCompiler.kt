@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.fir.builder.BodyBuildingMode
 import org.jetbrains.kotlin.fir.builder.RawFirBuilder
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.lightTree.LightTree2Fir
-import org.jetbrains.kotlin.fir.pipeline.convertToIr
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.calls.ImplicitDispatchReceiverValue
 import org.jetbrains.kotlin.fir.resolve.dfa.DataFlowAnalyzerContext
@@ -53,6 +52,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.readSourceFileWithMapping
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+import org.jetbrains.kotlin.fir.pipeline.convertToIrAndActualize
 
 class FirResult(
   val session: FirSession,
@@ -95,7 +95,6 @@ class TemplateCompiler(
   fun compileSource(
     metaCheckerContext: FirMetaCheckerContext?,
     source: String,
-    extendedAnalysisMode: Boolean,
     scopeDeclarations: List<FirDeclaration>,
     produceIr: Boolean = false
   ): TemplateResult {
@@ -153,9 +152,12 @@ class TemplateCompiler(
     val linkViaSignatures = moduleConfiguration.getBoolean(JVMConfigurationKeys.LINK_VIA_SIGNATURES)
     val scopeFiles = firResult.scopeDeclarations.filterIsInstance<FirFile>()
     val files = firResult.files + scopeFiles
-    val fir2IrResult = firResult.session.convertToIr(
-      firResult.scopeSession, files, fir2IrExtensions, emptyList(), linkViaSignatures
-    )
+    val validatedFirResult = with(firResult) {
+      org.jetbrains.kotlin.fir.pipeline.FirResult(platformOutput = org.jetbrains.kotlin.fir.pipeline.ModuleCompilerAnalyzedOutput(
+        session = session, scopeSession = scopeSession, fir = files
+      ), commonOutput = null)
+    }
+    val fir2IrResult = validatedFirResult.convertToIrAndActualize(fir2IrExtensions= fir2IrExtensions, irGeneratorExtensions = emptyList(), linkViaSignatures = linkViaSignatures)
     ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
     return fir2IrResult
   }
