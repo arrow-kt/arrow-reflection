@@ -21,9 +21,11 @@ import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.declarations.FirFile
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.resolve.fqName
+import org.jetbrains.kotlin.fir.resolve.getCorrespondingClassSymbolOrNull
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.name.FqName
 import kotlin.reflect.KClass
+import org.jetbrains.kotlin.name.ClassId
 
 class FirMetaAdditionalCheckersExtension(
   session: FirSession,
@@ -101,19 +103,10 @@ class FirMetaAdditionalCheckersExtension(
 }
 
 fun FirAnnotationContainer.metaAnnotations(session: FirSession): List<FirAnnotation> {
-  val elementAnnotations = annotations.filter {
-    val annotation = it.classId
-    if (annotation != null) {
-      val annotationSymbol = session.symbolProvider.getClassLikeSymbolByClassId(annotation)
-      val metaAnnotations = annotationSymbol?.annotations.orEmpty()
-      if (metaAnnotations.isEmpty()) {
-        false
-      } else {
-        metaAnnotations.any {
-          it.fqName(session) == FqName(Meta::class.java.canonicalName)
-        }
-      }
-    } else false
+  val elementAnnotations = annotations.filter { annotation ->
+    val annotationSymbol = annotation.getCorrespondingClassSymbolOrNull(session)
+    val metaAnnotations = annotationSymbol?.annotations.orEmpty()
+    with(metaAnnotations) { isNotEmpty() && any { it.fqName(session) == FqName(Meta::class.java.canonicalName) } }
   }
   val ownerAnnotations: List<FirAnnotation> = if (this is FirFunctionCall) {
     toResolvedCallableSymbol()?.fir?.metaAnnotations(session).orEmpty()

@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import kotlin.reflect.KClass
+import org.jetbrains.kotlin.fir.FirSession
 
 annotation class Meta {
 
@@ -39,7 +40,7 @@ annotation class Meta {
     @OptIn(SymbolInternals::class)
     private fun FirSession.isDecorated(newElement: FirFunctionCall): Boolean =
       newElement.toResolvedCallableSymbol()?.fir?.annotations?.hasAnnotation(
-        ClassId.topLevel(
+        classId = ClassId.topLevel(
           FqName(
             annotation.java.canonicalName
           )

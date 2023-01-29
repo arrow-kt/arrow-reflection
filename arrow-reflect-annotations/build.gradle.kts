@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -26,17 +27,17 @@ tasks {
   dokkaJavadoc { enabled = false }
   dokkaJekyll { enabled = false }
 
+  withType<JavaCompile>().configureEach {
+    sourceCompatibility = "${JavaVersion.VERSION_1_8}"
+    targetCompatibility = "${JavaVersion.VERSION_1_8}"
+  }
+
   withType<KotlinCompile>().configureEach {
     compilerOptions {
+      jvmTarget.set(JvmTarget.JVM_1_8)
       useK2.set(true)
       freeCompilerArgs.add("-Xcontext-receivers")
     }
-  }
-}
-
-kotlin {
-  jvmToolchain {
-    languageVersion.set(JavaLanguageVersion.of(8)) // "8"
   }
 }
 
