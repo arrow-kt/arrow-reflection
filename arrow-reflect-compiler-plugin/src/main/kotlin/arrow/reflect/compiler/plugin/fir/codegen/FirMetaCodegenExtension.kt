@@ -14,11 +14,11 @@ import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
-import org.jetbrains.kotlin.fir.resolve.constructType
 import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeLookupTagBasedType
+import org.jetbrains.kotlin.fir.types.constructType
 import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
@@ -37,22 +37,23 @@ class FirMetaCodegenExtension(
   private fun metaContext(generationContext: MemberGenerationContext?): FirMetaContext =
     FirMetaMemberGenerationContext(templateCompiler, session, generationContext)
 
-  override fun generateClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*>? {
-    val x = 0
+  override fun generateNestedClassLikeDeclaration(owner: FirClassSymbol<*>, name: Name): FirClassLikeSymbol<*>? {
     return if (!templateCompiler.compiling) {
-      val firClass: FirClass? =
-        if (!classId.isNestedClass)
-          invokeMeta(true, metaContext(null), emptyList(), Meta.Generate.TopLevel.Class::class, "classes", classId)
-        else
-          invokeMeta(
-            true,
-            metaContext(null),
-            emptyList(),
-            Meta.Generate.Members.NestedClasses::class,
-            "nestedClasses",
-            classId
-          )
-      firClass?.symbol ?: super.generateClassLikeDeclaration(classId)
+      val firClass: FirClass? = invokeMeta(
+        true,
+        metaContext(null),
+        emptyList(),
+        Meta.Generate.Members.NestedClasses::class,
+        "nestedClasses"
+      )
+      firClass?.symbol ?: super.generateNestedClassLikeDeclaration(owner, name)
+    } else null
+  }
+
+  override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*>? {
+    return if (!templateCompiler.compiling) {
+      val firClass: FirClass? = invokeMeta(true, metaContext(null), emptyList(), Meta.Generate.TopLevel.Class::class, "classes", classId)
+      firClass?.symbol ?: super.generateTopLevelClassLikeDeclaration(classId)
     } else null
   }
 
@@ -221,7 +222,7 @@ class FirMetaCodegenExtension(
 
 
   val metaAnnotatedPredicate: DeclarationPredicate
-    get() = DeclarationPredicate.create { metaAnnotated(AnnotationFqn("arrow.meta.Meta")) }
+    get() = DeclarationPredicate.create { metaAnnotated(listOf(AnnotationFqn("arrow.meta.Meta")), false) }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(metaAnnotatedPredicate)
