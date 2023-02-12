@@ -1,12 +1,38 @@
-package example
+package foo.bar
 
-import arrow.meta.samples.Product
+import arrow.meta.samples.DisallowLambdaCapture
+import kotlin.contracts.*
 
-@Product
-data class Sample(val name: String, val age: Int)
+interface Raise<in E> {
+  @DisallowLambdaCapture("It's unsafe to capture `raise` inside non-inline anonymous functions")
+  fun raise(e: E): Nothing
+}
 
+context(Raise<String>)
+fun shouldNotCapture(): () -> Unit {
+  return { raise("boom") }
+}
 
-fun main() {
-  val properties = Sample("j", 12).product()
-  println(properties)
+context(Raise<String>)
+fun inlineCaptureOk(): Unit {
+  listOf(1, 2, 3).map { raise("boom") }
+}
+
+@OptIn(ExperimentalContracts::class)
+fun exactlyOne(f: () -> Unit): Unit {
+  contract {
+    callsInPlace(f, InvocationKind.EXACTLY_ONCE)
+  }
+}
+
+@OptIn(ExperimentalContracts::class)
+fun exactlyOnce(f: () -> Unit): Unit {
+  contract {
+    callsInPlace(f, InvocationKind.EXACTLY_ONCE)
+  }
+}
+
+context(Raise<String>)
+fun ok(): () -> Unit = {
+  exactlyOnce { raise("boom") }
 }

@@ -2,6 +2,7 @@ package arrow.meta
 
 import org.jetbrains.kotlin.fir.FirAnnotationContainer
 import org.jetbrains.kotlin.fir.FirLabel
+import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.contracts.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
@@ -28,7 +29,7 @@ annotation class Meta {
     fun <In, Out> intercept(args: List<In>, func: (List<In>) -> Out): Out
 
     override fun FirMetaCheckerContext.functionCall(functionCall: FirFunctionCall): FirStatement {
-      val newCall = if (isDecorated(functionCall, session)) {
+      val newCall = if (session.isDecorated(functionCall)) {
         //language=kotlin
         val call: FirCall = decoratedCall(functionCall)
         call
@@ -37,15 +38,14 @@ annotation class Meta {
     }
 
     @OptIn(SymbolInternals::class)
-    private fun isDecorated(newElement: FirFunctionCall, session: FirSession): Boolean =
+    private fun FirSession.isDecorated(newElement: FirFunctionCall): Boolean =
       newElement.toResolvedCallableSymbol()?.fir?.annotations?.hasAnnotation(
         classId = ClassId.topLevel(
           FqName(
             annotation.java.canonicalName
           )
-        ),
-        session = session
-      ) == true
+        )
+      , this) == true
 
     private fun FirMetaContext.decoratedCall(
       newElement: FirFunctionCall
