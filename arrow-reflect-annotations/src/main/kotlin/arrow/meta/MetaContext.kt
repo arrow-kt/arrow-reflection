@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.text
 import kotlin.reflect.KClass
+import org.jetbrains.kotlin.fir.extensions.NestedClassGenerationContext
 
 abstract class MetaContext(open val templateCompiler: TemplateCompiler) {
 
@@ -204,11 +205,21 @@ class FirMetaCheckerContext(
 class FirMetaMemberGenerationContext(
   override val templateCompiler: TemplateCompiler,
   override val session: FirSession,
-  val memberGenerationContext: MemberGenerationContext?,
+  val context: MemberGenerationContext?,
 ) : FirMetaContext(session, templateCompiler) {
 
   @OptIn(SymbolInternals::class)
   override val scopeDeclarations: List<FirDeclaration>
-    get() = listOfNotNull(memberGenerationContext?.owner?.fir)
+    get() = listOfNotNull(context?.owner?.fir)
 }
 
+class FirMetaNestedGenerationContext(
+  override val templateCompiler: TemplateCompiler,
+  override val session: FirSession,
+  val context: NestedClassGenerationContext?,
+) : FirMetaContext(session, templateCompiler) {
+
+  @OptIn(SymbolInternals::class)
+  override val scopeDeclarations: List<FirDeclaration>
+    get() = listOfNotNull(context?.owner?.fir)
+}
