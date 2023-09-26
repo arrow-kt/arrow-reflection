@@ -1,30 +1,32 @@
 pluginManagement {
   repositories {
-    mavenCentral()
-    gradlePluginPortal()
-    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
-    maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
     mavenLocal {
       content {
         includeGroup("io.arrow-kt")
         includeGroup("io.arrow-kt.reflect")
       }
     }
+    mavenCentral()
+    gradlePluginPortal()
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
+    maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
+    maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev/")
   }
 }
 
 dependencyResolutionManagement {
   repositories {
-    mavenCentral()
-    gradlePluginPortal()
-    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
-    maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
     mavenLocal {
       content {
         includeGroup("io.arrow-kt")
         includeGroup("io.arrow-kt.reflect")
       }
     }
+    mavenCentral()
+    gradlePluginPortal()
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
+    maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
+    maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev/")
   }
 }
 

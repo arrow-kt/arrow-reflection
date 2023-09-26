@@ -2,9 +2,11 @@ package arrow.reflect.compiler.plugin.runners
 
 import arrow.reflect.compiler.plugin.services.*
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
+import org.jetbrains.kotlin.test.FirParser
 import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
 import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives
+import org.jetbrains.kotlin.test.directives.configureFirParser
 import org.jetbrains.kotlin.test.frontend.fir.FirFrontendFacade
 import org.jetbrains.kotlin.test.initIdeaConfiguration
 import org.jetbrains.kotlin.test.model.DependencyKind
@@ -36,6 +38,8 @@ fun TestConfigurationBuilder.commonFirWithPluginFrontendConfiguration() {
     +FirDiagnosticsDirectives.FIR_DUMP
     +AdditionalFilesDirectives.SOME_FILE_DIRECTIVE
   }
+
+  configureFirParser(FirParser.LightTree)
 
   globalDefaults {
     targetBackend = TargetBackend.JVM_IR

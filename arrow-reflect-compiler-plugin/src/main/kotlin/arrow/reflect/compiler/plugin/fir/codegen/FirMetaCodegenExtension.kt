@@ -9,10 +9,7 @@ import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
-import org.jetbrains.kotlin.fir.extensions.AnnotationFqn
-import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
-import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
-import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
+import org.jetbrains.kotlin.fir.extensions.*
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
@@ -37,7 +34,7 @@ class FirMetaCodegenExtension(
   private fun metaContext(generationContext: MemberGenerationContext?): FirMetaContext =
     FirMetaMemberGenerationContext(templateCompiler, session, generationContext)
 
-  override fun generateNestedClassLikeDeclaration(owner: FirClassSymbol<*>, name: Name): FirClassLikeSymbol<*>? {
+  override fun generateNestedClassLikeDeclaration(owner: FirClassSymbol<*>, name: Name, context: NestedClassGenerationContext): FirClassLikeSymbol<*>? {
     return if (!templateCompiler.compiling) {
       val firClass: FirClass? = invokeMeta(
         true,
@@ -46,7 +43,7 @@ class FirMetaCodegenExtension(
         Meta.Generate.Members.NestedClasses::class,
         "nestedClasses"
       )
-      firClass?.symbol ?: super.generateNestedClassLikeDeclaration(owner, name)
+      firClass?.symbol ?: super.generateNestedClassLikeDeclaration(owner, name, context)
     } else null
   }
 
@@ -142,7 +139,7 @@ class FirMetaCodegenExtension(
     } else super.generateProperties(callableId, context)
   }
 
-  override fun getCallableNamesForClass(classSymbol: FirClassSymbol<*>): Set<Name> =
+  override fun getCallableNamesForClass(classSymbol: FirClassSymbol<*>, context: MemberGenerationContext): Set<Name> =
     constructors(classSymbol).orEmpty() +
       properties(classSymbol).orEmpty() +
       functions(classSymbol).orEmpty()
@@ -197,7 +194,7 @@ class FirMetaCodegenExtension(
     )
   // else null
 
-  override fun getNestedClassifiersNames(classSymbol: FirClassSymbol<*>): Set<Name> =
+  override fun getNestedClassifiersNames(classSymbol: FirClassSymbol<*>, context: NestedClassGenerationContext): Set<Name> =
     nestedClasses(classSymbol).orEmpty()
 
   fun topLevelFunctions(): Set<CallableId>? =
