@@ -64,6 +64,9 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import org.jetbrains.kotlin.fir.pipeline.convertToIrAndActualize
 import org.jetbrains.kotlin.fir.pipeline.convertToIrAndActualizeForJvm
+import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
+import org.jetbrains.kotlin.fir.resolve.providers.impl.FirCachingCompositeSymbolProvider
+import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.util.PrivateForInline
 import kotlin.reflect.jvm.internal.impl.builtins.jvm.JvmBuiltIns
 
@@ -251,8 +254,18 @@ class TemplateCompiler(
       scopeDeclarations
     )
 
+    @OptIn(SessionConfiguration::class)
     fun process(files: List<FirFile>) {
       for (processor in processors) {
+        if (processor.session.symbolProvider is FirCachingCompositeSymbolProvider) {
+          // TODO: clear the cache?
+          //val wrapProviders = (processor.session.symbolProvider as FirCachingCompositeSymbolProvider).providers
+          // TODO: or keep the cache and wrap it to prevent clearing:
+          val wrapProviders = listOf(processor.session.symbolProvider)
+          processor.session.register(FirSymbolProvider::class,
+            FirCachingCompositeSymbolProvider(processor.session, wrapProviders, true)
+          )
+        }
         processor.beforePhase()
         when (processor) {
           is FirTransformerBasedResolveProcessor -> {
