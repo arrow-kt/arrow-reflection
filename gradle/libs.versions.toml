@@ -1,7 +1,7 @@
 [versions]
 arrowGradleConfig = "0.11.0"
 classgraph = "4.8.154"
-kotlin = "1.9.20-Beta2"
+kotlin = "1.9.30-dev-3330"
 reflections = "0.10.2"
 
 [libraries]

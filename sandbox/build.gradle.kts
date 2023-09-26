@@ -2,10 +2,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlinVersion = "1.9.20-Beta2"
+val kotlinVersion = "1.9.30-dev-3330"
 
 plugins {
-  id("org.jetbrains.kotlin.jvm") version "1.9.20-Beta2"
+  id("org.jetbrains.kotlin.jvm") version "1.9.30-dev-3330"
   id("io.arrow-kt.reflect") version "0.1.0"
   application
 }

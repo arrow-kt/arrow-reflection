@@ -163,24 +163,27 @@ class TemplateCompiler(
   fun convertToIR(metaCheckerContext: FirMetaCheckerContext?, firResult: FirResult, moduleConfiguration: CompilerConfiguration): Fir2IrActualizedResult {
     val diagnosticReporter = DiagnosticReporterFactory.createPendingReporter()
     val fir2IrExtensions = JvmFir2IrExtensions(moduleConfiguration, JvmIrDeserializerImpl(), JvmIrMangler)
-    val linkViaSignatures = moduleConfiguration.getBoolean(JVMConfigurationKeys.LINK_VIA_SIGNATURES)
     val scopeFiles = firResult.scopeDeclarations.filterIsInstance<FirFile>()
     val files = firResult.files + scopeFiles
     val validatedFirResult = with(firResult) {
-      org.jetbrains.kotlin.fir.pipeline.FirResult(listOf(
-        ModuleCompilerAnalyzedOutput(session = session, scopeSession = scopeSession, fir = files)
-      ))
+      org.jetbrains.kotlin.fir.pipeline.FirResult(
+        listOf(
+          ModuleCompilerAnalyzedOutput(session = session, scopeSession = scopeSession, fir = files)
+        )
+      )
     }
 
     val fir2IrConfiguration = Fir2IrConfiguration(
       languageVersionSettings = moduleConfiguration.languageVersionSettings,
       diagnosticReporter = diagnosticReporter,
-      linkViaSignatures = linkViaSignatures,
+      linkViaSignatures = moduleConfiguration.getBoolean(JVMConfigurationKeys.LINK_VIA_SIGNATURES),
       evaluatedConstTracker = moduleConfiguration
         .putIfAbsent(CommonConfigurationKeys.EVALUATED_CONST_TRACKER, EvaluatedConstTracker.create()),
       inlineConstTracker = moduleConfiguration[CommonConfigurationKeys.INLINE_CONST_TRACKER],
-      // TODO: read notes on this flag
-      allowNonCachedDeclarations = false
+      // TODO: read notes on these new flags
+      allowNonCachedDeclarations = false,
+      // TODO: see KT-61514
+      useIrFakeOverrideBuilder = moduleConfiguration.getBoolean(CommonConfigurationKeys.USE_IR_FAKE_OVERRIDE_BUILDER)
     )
 
     val fir2IrResult = validatedFirResult.convertToIrAndActualizeForJvm(

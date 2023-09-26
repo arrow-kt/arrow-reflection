@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
+import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirTypeRef
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.renderReadableWithFqNames
@@ -127,6 +128,9 @@ abstract class FirMetaContext(
     (this as? FirTypeRef)?.coneType?.renderReadableWithFqNames()?.replace("/", ".")
       ?: source?.text?.toString()
       ?: error("$this has no source psi text element")
+
+  operator fun ConeKotlinType.unaryPlus(): String =
+    type.renderReadableWithFqNames().replace("/", ".")
 
   val String.call: FirCall
     get() =

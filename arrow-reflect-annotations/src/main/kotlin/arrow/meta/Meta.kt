@@ -51,7 +51,7 @@ annotation class Meta {
       newElement: FirFunctionCall
     ): FirCall {
       val args = newElement.arguments
-      val argsApplied = args.mapIndexed { n, expr -> "args[$n] as ${+expr.typeRef}" }
+      val argsApplied = args.mapIndexed { n, expr -> "args[$n] as ${+expr.resolvedType}" }
       val name = newElement.toResolvedCallableSymbol()?.callableId?.asSingleFqName()?.asString()
 
       return compile(
