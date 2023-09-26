@@ -179,6 +179,7 @@ class TemplateCompiler(
       evaluatedConstTracker = moduleConfiguration
         .putIfAbsent(CommonConfigurationKeys.EVALUATED_CONST_TRACKER, EvaluatedConstTracker.create()),
       inlineConstTracker = moduleConfiguration[CommonConfigurationKeys.INLINE_CONST_TRACKER],
+      // TODO: read notes on this flag
       allowNonCachedDeclarations = false
     )
 
