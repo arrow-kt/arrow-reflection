@@ -182,7 +182,7 @@ annotation class Meta {
     }
 
     interface ArrayOfCall : FrontendTransformer {
-      fun FirMetaCheckerContext.arrayOfCall(arrayOfCall: FirArrayOfCall): FirStatement
+      fun FirMetaCheckerContext.arrayOfCall(arrayOfCall: FirArrayLiteral): FirStatement
     }
 
     interface AssignmentOperatorStatement : FrontendTransformer {
@@ -394,7 +394,7 @@ annotation class Meta {
     }
 
     interface QualifiedAccess : FrontendTransformer {
-      fun FirMetaCheckerContext.qualifiedAccess(qualifiedAccess: FirQualifiedAccess): FirStatement
+      fun FirMetaCheckerContext.qualifiedAccess(qualifiedAccess: FirQualifiedAccessExpression): FirStatement
     }
 
     interface QualifiedAccessExpression : FrontendTransformer {

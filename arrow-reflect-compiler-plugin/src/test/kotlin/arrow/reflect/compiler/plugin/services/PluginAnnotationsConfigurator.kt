@@ -2,7 +2,9 @@ package arrow.reflect.compiler.plugin.services
 
 import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoot
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.test.FirParser
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
+import org.jetbrains.kotlin.test.directives.configureFirParser
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.EnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.RuntimeClasspathProvider
@@ -58,5 +60,6 @@ class MetaRuntimeClasspathProvider(testServices: TestServices) : RuntimeClasspat
 fun TestConfigurationBuilder.configureForRuntimeAnnotationLibrary() {
   useConfigurators(::PluginAnnotationsConfigurator)
   useCustomRuntimeClasspathProviders(::MetaRuntimeClasspathProvider)
+  configureFirParser(FirParser.LightTree)
 }
 

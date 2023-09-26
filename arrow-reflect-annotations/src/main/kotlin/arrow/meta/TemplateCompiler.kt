@@ -1,3 +1,5 @@
+@file:OptIn(PrivateForInline::class)
+
 package arrow.meta
 
 import com.intellij.psi.PsiDocumentManager
@@ -6,21 +8,29 @@ import org.jetbrains.kotlin.KtInMemoryTextSourceFile
 import org.jetbrains.kotlin.KtIoFileSourceFile
 import org.jetbrains.kotlin.KtSourceFile
 import org.jetbrains.kotlin.backend.jvm.JvmIrDeserializerImpl
+import org.jetbrains.kotlin.backend.jvm.JvmIrTypeSystemContext
+import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.cli.common.messages.*
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.modules.ModuleBuilder
 import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.constant.EvaluatedConstTracker
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.analysis.collectors.FirDiagnosticsCollector
+import org.jetbrains.kotlin.fir.backend.Fir2IrConfiguration
 import org.jetbrains.kotlin.fir.backend.Fir2IrResult
+import org.jetbrains.kotlin.fir.backend.jvm.FirJvmVisibilityConverter
 import org.jetbrains.kotlin.fir.backend.jvm.JvmFir2IrExtensions
+import org.jetbrains.kotlin.fir.builder.AbstractRawFirBuilder
 import org.jetbrains.kotlin.fir.builder.BodyBuildingMode
-import org.jetbrains.kotlin.fir.builder.RawFirBuilder
+import org.jetbrains.kotlin.fir.builder.PsiRawFirBuilder
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.lightTree.LightTree2Fir
+import org.jetbrains.kotlin.fir.pipeline.Fir2IrActualizedResult
+import org.jetbrains.kotlin.fir.pipeline.ModuleCompilerAnalyzedOutput
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.calls.ImplicitDispatchReceiverValue
 import org.jetbrains.kotlin.fir.resolve.dfa.DataFlowAnalyzerContext
@@ -53,6 +63,9 @@ import org.jetbrains.kotlin.readSourceFileWithMapping
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import org.jetbrains.kotlin.fir.pipeline.convertToIrAndActualize
+import org.jetbrains.kotlin.fir.pipeline.convertToIrAndActualizeForJvm
+import org.jetbrains.kotlin.util.PrivateForInline
+import kotlin.reflect.jvm.internal.impl.builtins.jvm.JvmBuiltIns
 
 class FirResult(
   val session: FirSession,
@@ -87,7 +100,7 @@ class TemplateCompiler(
 
   data class TemplateResult(
     val firResults: List<FirResult>,
-    val irResults: List<Fir2IrResult>
+    val irResults: List<Fir2IrActualizedResult>
   )
 
   var compiling: Boolean = false
@@ -105,7 +118,7 @@ class TemplateCompiler(
       println("parsing source:\n$source")
       println("session: ${session::class}")
       val outputs: ArrayList<FirResult> = arrayListOf()
-      val irOutput: ArrayList<Fir2IrResult> = arrayListOf()
+      val irOutput: ArrayList<Fir2IrActualizedResult> = arrayListOf()
       val messageCollector: MessageCollector = MessageCollector.NONE
       for (module in chunk) {
         val moduleConfiguration = projectConfiguration//.applyModuleProperties(module, buildFile)
@@ -121,7 +134,7 @@ class TemplateCompiler(
 
         if (produceIr) {
           outputs.forEach {
-            irOutput.add(convertToIR(it, moduleConfiguration))
+            irOutput.add(convertToIR(metaCheckerContext, it, moduleConfiguration))
           }
         }
       }
@@ -147,18 +160,42 @@ class TemplateCompiler(
     return firResult
   }
 
-  fun convertToIR(firResult: FirResult, moduleConfiguration: CompilerConfiguration): Fir2IrResult {
+  fun convertToIR(metaCheckerContext: FirMetaCheckerContext?, firResult: FirResult, moduleConfiguration: CompilerConfiguration): Fir2IrActualizedResult {
+    val diagnosticReporter = DiagnosticReporterFactory.createPendingReporter()
     val fir2IrExtensions = JvmFir2IrExtensions(moduleConfiguration, JvmIrDeserializerImpl(), JvmIrMangler)
     val linkViaSignatures = moduleConfiguration.getBoolean(JVMConfigurationKeys.LINK_VIA_SIGNATURES)
     val scopeFiles = firResult.scopeDeclarations.filterIsInstance<FirFile>()
     val files = firResult.files + scopeFiles
     val validatedFirResult = with(firResult) {
-      org.jetbrains.kotlin.fir.pipeline.FirResult(platformOutput = org.jetbrains.kotlin.fir.pipeline.ModuleCompilerAnalyzedOutput(
-        session = session, scopeSession = scopeSession, fir = files
-      ), commonOutput = null)
+      org.jetbrains.kotlin.fir.pipeline.FirResult(listOf(
+        ModuleCompilerAnalyzedOutput(session = session, scopeSession = scopeSession, fir = files)
+      ))
     }
-    val fir2IrResult = validatedFirResult.convertToIrAndActualize(fir2IrExtensions= fir2IrExtensions, irGeneratorExtensions = emptyList(), linkViaSignatures = linkViaSignatures)
+
+    val fir2IrConfiguration = Fir2IrConfiguration(
+      languageVersionSettings = moduleConfiguration.languageVersionSettings,
+      diagnosticReporter = diagnosticReporter,
+      linkViaSignatures = linkViaSignatures,
+      evaluatedConstTracker = moduleConfiguration
+        .putIfAbsent(CommonConfigurationKeys.EVALUATED_CONST_TRACKER, EvaluatedConstTracker.create()),
+      inlineConstTracker = moduleConfiguration[CommonConfigurationKeys.INLINE_CONST_TRACKER],
+      allowNonCachedDeclarations = false
+    )
+
+    val fir2IrResult = validatedFirResult.convertToIrAndActualizeForJvm(
+      fir2IrExtensions= fir2IrExtensions,
+      irGeneratorExtensions = emptyList(),
+      fir2IrConfiguration = fir2IrConfiguration,
+    )
     ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
+    val diagnosticsContext = metaCheckerContext?.checkerContext
+    if (diagnosticsContext != null) {
+      diagnosticReporter.diagnostics.forEach {
+        metaCheckerContext.diagnosticReporter.report(it, diagnosticsContext)
+        println("error: [" + it.factory.name + "] " + it.factory.ktRenderer.render(it))
+      }
+    }
+
     return fir2IrResult
   }
 
@@ -204,7 +241,6 @@ class TemplateCompiler(
     val scopeSession: ScopeSession,
     scopeDeclarations: List<FirDeclaration>
   ) {
-
     private val processors: List<FirResolveProcessor> = createAllCompilerResolveProcessors(
       session,
       scopeSession,
@@ -217,7 +253,9 @@ class TemplateCompiler(
         when (processor) {
           is FirTransformerBasedResolveProcessor -> {
             for (file in files) {
-              processor.processFile(file)
+              withFileAnalysisExceptionWrapping(file) {
+                processor.processFile(file)
+              }
             }
           }
 
@@ -258,7 +296,7 @@ class TemplateCompiler(
 
   fun FirSession.buildFirFromKtFiles(ktFiles: Collection<KtFile>): List<FirFile> {
     val firProvider = (firProvider as? FirProviderImpl)
-    val builder = RawFirBuilder(this, kotlinScopeProvider, BodyBuildingMode.NORMAL)
+    val builder = PsiRawFirBuilder(this, kotlinScopeProvider, BodyBuildingMode.NORMAL)
     return ktFiles.map {
       builder.buildFirFile(it).also { firFile ->
         firProvider?.recordFile(firFile)
@@ -345,7 +383,7 @@ class FirBodyResolveTransformerAdapter(
     implicitTypeOnly = false,
     scopeSession = scopeSession,
     outerBodyResolveContext = BodyResolveContext(
-      ReturnTypeCalculatorForFullBodyResolve,
+      ReturnTypeCalculatorForFullBodyResolve.Default,
       DataFlowAnalyzerContext(session),
       scopeDeclarations.filterIsInstance<FirClassLikeDeclaration>().toSet()
     )
