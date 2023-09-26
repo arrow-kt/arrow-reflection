@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val kotlinVersion = "1.9.20-Beta2"
@@ -22,7 +23,7 @@ tasks {
   withType<KotlinCompile>().configureEach {
     compilerOptions {
       jvmTarget.set(JvmTarget.JVM_1_8)
-      useK2.set(true)
+      languageVersion.set(KotlinVersion.KOTLIN_2_0)
       freeCompilerArgs.add("-Xcontext-receivers")
     }
   }
