@@ -2,16 +2,14 @@ package arrow.meta
 
 import org.jetbrains.kotlin.fir.FirAnnotationContainer
 import org.jetbrains.kotlin.fir.FirLabel
-import org.jetbrains.kotlin.fir.contracts.*
+import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
-import org.jetbrains.kotlin.fir.references.*
+import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.types.*
-import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -27,7 +25,7 @@ annotation class Meta {
     fun <In, Out> intercept(args: List<In>, func: (List<In>) -> Out): Out
 
     override fun FirMetaCheckerContext.functionCall(functionCall: FirFunctionCall): FirStatement {
-      val newCall = if (isDecorated(functionCall)) {
+      val newCall = if (session.isDecorated(functionCall)) {
         //language=kotlin
         val call: FirCall = decoratedCall(functionCall)
         call
@@ -36,20 +34,20 @@ annotation class Meta {
     }
 
     @OptIn(SymbolInternals::class)
-    private fun isDecorated(newElement: FirFunctionCall): Boolean =
+    private fun FirSession.isDecorated(newElement: FirFunctionCall): Boolean =
       newElement.toResolvedCallableSymbol()?.fir?.annotations?.hasAnnotation(
         ClassId.topLevel(
           FqName(
             annotation.java.canonicalName
           )
-        )
+        ), this
       ) == true
 
     private fun FirMetaContext.decoratedCall(
       newElement: FirFunctionCall
     ): FirCall {
       val args = newElement.arguments
-      val argsApplied = args.mapIndexed { n, expr -> "args[$n] as ${+expr.typeRef}" }
+      val argsApplied = args.mapIndexed { n, expr -> "args[$n] as ${expr.psi?.text}" }
       val name = newElement.toResolvedCallableSymbol()?.callableId?.asSingleFqName()?.asString()
 
       return compile(
@@ -180,15 +178,15 @@ annotation class Meta {
     }
 
     interface ArrayOfCall : FrontendTransformer {
-      fun FirMetaCheckerContext.arrayOfCall(arrayOfCall: FirArrayOfCall): FirStatement
+      fun FirMetaCheckerContext.arrayOfCall(arrayOfCall: FirArrayLiteral): FirStatement
     }
 
     interface AssignmentOperatorStatement : FrontendTransformer {
-      fun FirMetaCheckerContext.assignmentOperatorStatement(assignmentOperatorStatement: FirAssignmentOperatorStatement): FirStatement
+      fun FirMetaCheckerContext.assignmentOperatorStatement(assignmentOperatorStatement: FirAugmentedAssignment): FirStatement
     }
 
     interface AugmentedArraySetCall : FrontendTransformer {
-      fun FirMetaCheckerContext.augmentedArraySetCall(augmentedArraySetCall: FirAugmentedArraySetCall): FirStatement
+      fun FirMetaCheckerContext.augmentedArraySetCall(augmentedArraySetCall: FirIndexedAccessAugmentedAssignment): FirStatement
     }
 
     interface BackingField : FrontendTransformer {
@@ -196,7 +194,7 @@ annotation class Meta {
     }
 
     interface BinaryLogicExpression : FrontendTransformer {
-      fun FirMetaCheckerContext.binaryLogicExpression(binaryLogicExpression: FirBinaryLogicExpression): FirStatement
+      fun FirMetaCheckerContext.binaryLogicExpression(binaryLogicExpression: FirBooleanOperatorExpression): FirStatement
     }
 
     interface Block : FrontendTransformer {
@@ -248,7 +246,7 @@ annotation class Meta {
     }
 
     interface ConstExpression : FrontendTransformer {
-      fun FirMetaCheckerContext.constExpression(constExpression: FirConstExpression<*>): FirStatement
+      fun FirMetaCheckerContext.constExpression(constExpression: FirLiteralExpression): FirStatement
     }
 
     interface Constructor : FrontendTransformer {
@@ -360,7 +358,7 @@ annotation class Meta {
     }
 
     interface LambdaArgumentExpression : FrontendTransformer {
-      fun FirMetaCheckerContext.lambdaArgumentExpression(lambdaArgumentExpression: FirLambdaArgumentExpression): FirStatement
+      fun FirMetaCheckerContext.lambdaArgumentExpression(lambdaArgumentExpression: FirAnonymousFunctionExpression): FirStatement
     }
 
     interface Loop : FrontendTransformer {
@@ -392,7 +390,7 @@ annotation class Meta {
     }
 
     interface QualifiedAccess : FrontendTransformer {
-      fun FirMetaCheckerContext.qualifiedAccess(qualifiedAccess: FirQualifiedAccess): FirStatement
+      fun FirMetaCheckerContext.qualifiedAccess(qualifiedAccess: FirQualifiedAccessExpression): FirStatement
     }
 
     interface QualifiedAccessExpression : FrontendTransformer {
@@ -472,7 +470,7 @@ annotation class Meta {
     }
 
     interface TypeRefWithNullability : FrontendTransformer {
-      fun FirMetaCheckerContext.typeRefWithNullability(typeRefWithNullability: FirTypeRefWithNullability): FirTypeRef
+      fun FirMetaCheckerContext.typeRefWithNullability(typeRefWithNullability: FirTypeRef): FirTypeRef
     }
 
     interface UserTypeRef : FrontendTransformer {

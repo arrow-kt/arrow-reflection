@@ -61,8 +61,8 @@ dependencies {
 
 tasks.withType<KotlinCompile>().configureEach {
   compilerOptions {
-    useK2.set(true)
-    freeCompilerArgs.add("-Xcontext-receivers")
+//    useK2.set(true)
+//    freeCompilerArgs.add("-Xcontext-receivers")
   }
 }
 

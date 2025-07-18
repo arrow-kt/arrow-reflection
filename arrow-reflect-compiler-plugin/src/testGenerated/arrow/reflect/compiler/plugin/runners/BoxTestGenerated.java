@@ -6,7 +6,6 @@ import com.intellij.testFramework.TestDataPath;
 import org.jetbrains.kotlin.test.util.KtTestUtil;
 import org.jetbrains.kotlin.test.TargetBackend;
 import org.jetbrains.kotlin.test.TestMetadata;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -17,32 +16,32 @@ import java.util.regex.Pattern;
 @TestMetadata("src/testData/box")
 @TestDataPath("$PROJECT_ROOT")
 public class BoxTestGenerated extends AbstractBoxTest {
-    @Test
-    public void testAllFilesPresentInBox() throws Exception {
-        KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("src/testData/box"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
-    }
+  @Test
+  public void testAllFilesPresentInBox() {
+    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("src/testData/box"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+  }
 
-    @Test
-    @TestMetadata("decorator_test.kt")
-    public void testDecorator_test() throws Exception {
-        runTest("src/testData/box/decorator_test.kt");
-    }
+  @Test
+  @TestMetadata("decorator_test.kt")
+  public void testDecorator_test() {
+    runTest("src/testData/box/decorator_test.kt");
+  }
 
-    @Test
-    @TestMetadata("product_test.kt")
-    public void testProduct_test() throws Exception {
-        runTest("src/testData/box/product_test.kt");
-    }
+  @Test
+  @TestMetadata("product_test.kt")
+  public void testProduct_test() {
+    runTest("src/testData/box/product_test.kt");
+  }
 
-    @Test
-    @TestMetadata("product_test_expected.kt")
-    public void testProduct_test_expected() throws Exception {
-        runTest("src/testData/box/product_test_expected.kt");
-    }
+  @Test
+  @TestMetadata("product_test_expected.kt")
+  public void testProduct_test_expected() {
+    runTest("src/testData/box/product_test_expected.kt");
+  }
 
-    @Test
-    @TestMetadata("sample_test.kt")
-    public void testSample_test() throws Exception {
-        runTest("src/testData/box/sample_test.kt");
-    }
+  @Test
+  @TestMetadata("sample_test.kt")
+  public void testSample_test() {
+    runTest("src/testData/box/sample_test.kt");
+  }
 }

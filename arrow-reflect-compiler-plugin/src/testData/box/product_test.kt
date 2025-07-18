@@ -1,3 +1,5 @@
+// WITH_STDLIB
+// MODULE: main
 package test
 
 import arrow.meta.samples.Product

@@ -1,4 +1,4 @@
-FILE: product_test.kt
+FILE: module_main_product_test.kt
     package test
 
     @R|arrow/meta/samples/Product|() public final data class Sample : R|kotlin/Any| {
@@ -18,15 +18,11 @@ FILE: product_test.kt
 
         public final fun copy(foo: R|kotlin/Int| = this@R|test/Sample|.R|test/Sample.foo|, bar: R|kotlin/String| = this@R|test/Sample|.R|test/Sample.bar|): R|test/Sample|
 
-        public final fun product(): R|kotlin/collections/List<kotlin/Pair<kotlin/String, *>>| {
-            ^product R|kotlin/collections/listOf|<R|kotlin/Pair<kotlin/String, it(kotlin/Comparable<*> & java/io/Serializable)>|>(vararg(String(foo).R|kotlin/to|<R|kotlin/String|, R|kotlin/Int|>(this@R|test/Sample|.R|test/Sample.foo|), String(bar).R|kotlin/to|<R|kotlin/String|, R|kotlin/String|>(this@R|test/Sample|.R|test/Sample.bar|)))
-        }
-
     }
     public final fun box(): R|kotlin/String| {
-        lval x: R|kotlin/collections/List<kotlin/Pair<kotlin/String, *>>| = R|test/Sample.Sample|(foo = Int(0), bar = String(abc)).R|test/Sample.product|()
+        lval x: R|kotlin/collections/List<ERROR CLASS: Symbol not found for Pair<kotlin/String, *>>| = R|test/Sample.Sample|(Int(0), String(abc)).R|test/Sample.product|()
         ^box when () {
-            ==(R|<local>/x|, R|kotlin/collections/listOf|<R|kotlin/Pair<kotlin/String, it(kotlin/Comparable<*> & java/io/Serializable)>|>(vararg(String(foo).R|kotlin/to|<R|kotlin/String|, R|kotlin/Int|>(Int(0)), String(bar).R|kotlin/to|<R|kotlin/String|, R|kotlin/String|>(String(abc))))) ->  {
+            ==(R|<local>/x|, <Unresolved name: listOf>#(String(foo).<Unresolved name: to>#(Int(0)), String(bar).<Unresolved name: to>#(String(abc)))) ->  {
                 String(OK)
             }
             else ->  {

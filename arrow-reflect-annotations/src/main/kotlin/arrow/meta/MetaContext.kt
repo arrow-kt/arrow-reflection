@@ -89,9 +89,15 @@ abstract class FirMetaContext(
   fun FirClassSymbol<*>.hasCompanion(): Boolean = this.companion() != null
 
   @OptIn(SymbolInternals::class)
-  fun FirClassSymbol<*>.companion(): FirClass? =
-    fir.declarations.filterIsInstance<FirClass>()
-      .firstOrNull { it.classId.shortClassName == Name.identifier("Companion") }
+  fun FirClassSymbol<*>.companion(): FirClass? {
+    var companionClass: FirClass? = null
+    fir.processAllDeclarations(session) { declaration ->
+      if (declaration is FirClass && declaration.classId.shortClassName == Name.identifier("Companion")) {
+        companionClass = declaration
+      }
+    }
+    return companionClass
+  }
 
   @OptIn(SymbolInternals::class)
   fun propertiesOf(firClass: FirClass, f: (FirValueParameter) -> String): String =
@@ -195,8 +201,7 @@ class FirMetaCheckerContext(
       source,
       factory,
       msg,
-      checkerContext,
-      AbstractSourceElementPositioningStrategy.DEFAULT
+      checkerContext
     )
   }
 

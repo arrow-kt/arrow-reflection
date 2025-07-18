@@ -9,20 +9,40 @@ internal object ClasspathMetaScanner {
     val result = ClassGraph().acceptPackages("arrow.meta.module.impl").enableAllInfo()
       .scan()
     val metaModuleImpls: ClassInfoList = result.getClassesImplementing(Module::class.java)
-    val metaTypes = metaModuleImpls.flatMap {
-      it.declaredMethodInfo.map { it.typeSignatureOrTypeDescriptor.resultType.toString() }
+    val metaTypes = metaModuleImpls.flatMap { moduleInfo ->
+      // Get the property getter methods (getIncrement, getProduct, etc.)
+      val getters = moduleInfo.declaredMethodInfo.filter { methodInfo ->
+        methodInfo.name.startsWith("get") && methodInfo.parameterInfo.isEmpty()
+      }
+      getters.map { getter ->
+        getter.typeSignatureOrTypeDescriptor.resultType.toString()
+      }
     }
-    val classesAndCompanions = metaTypes.mapNotNull {
-      val klass = try {
-        Class.forName(it)
-      } catch (e: ClassNotFoundException) {
-        null
-      } catch (e: NoClassDefFoundError) {
+    val classesAndCompanions = metaTypes.mapNotNull { companionClassName ->
+      // The companion class name is like "arrow.meta.samples.Increment$Companion"
+      // We need to extract the annotation class name (without $Companion)
+      val annotationClassName = companionClassName.removeSuffix("\$Companion")
+      
+      val annotationClass = try {
+        Class.forName(annotationClassName)
+      } catch (e: Exception) {
         null
       }
-      val companion = klass?.declaredClasses?.firstOrNull()
-      if (klass != null && companion != null) klass to companion
-      else null
+      
+      val companionClass = try {
+        Class.forName(companionClassName.replace('$', '.'))
+      } catch (e: Exception) {
+        try {
+          // Try with the $ notation
+          Class.forName(companionClassName)
+        } catch (e2: Exception) {
+          null
+        }
+      }
+      
+      if (annotationClass != null && companionClass != null) {
+        annotationClass to companionClass
+      } else null
     }
     val targets = classesAndCompanions.flatMap { (klass, companion) ->
       companion.declaredMethods.map {

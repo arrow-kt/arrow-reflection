@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
   alias(libs.plugins.kotlin.jvm)
   //  alias(libs.plugins.arrowGradleConfig.kotlin)
@@ -26,12 +24,6 @@ tasks {
   dokkaJavadoc { enabled = false }
   dokkaJekyll { enabled = false }
 
-  withType<KotlinCompile>().configureEach {
-    compilerOptions {
-      useK2.set(true)
-      freeCompilerArgs.add("-Xcontext-receivers")
-    }
-  }
 }
 
 kotlin {
