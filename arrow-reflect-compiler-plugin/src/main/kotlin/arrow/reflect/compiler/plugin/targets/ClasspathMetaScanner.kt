@@ -15,7 +15,8 @@ internal object ClasspathMetaScanner {
         methodInfo.name.startsWith("get") && methodInfo.parameterInfo.isEmpty()
       }
       getters.map { getter ->
-        getter.typeSignatureOrTypeDescriptor.resultType.toString()
+        val resultType = getter.typeSignatureOrTypeDescriptor.resultType.toString()
+        resultType
       }
     }
     val classesAndCompanions = metaTypes.mapNotNull { companionClassName ->
@@ -30,14 +31,9 @@ internal object ClasspathMetaScanner {
       }
       
       val companionClass = try {
-        Class.forName(companionClassName.replace('$', '.'))
+        Class.forName(companionClassName)
       } catch (e: Exception) {
-        try {
-          // Try with the $ notation
-          Class.forName(companionClassName)
-        } catch (e2: Exception) {
-          null
-        }
+        null
       }
       
       if (annotationClass != null && companionClass != null) {
@@ -45,15 +41,15 @@ internal object ClasspathMetaScanner {
       } else null
     }
     val targets = classesAndCompanions.flatMap { (klass, companion) ->
-      companion.declaredMethods.map {
+      companion.declaredMethods.map { method ->
         val target = MetagenerationTarget.Fir
         MetaTarget(
           klass.kotlin,
           target,
           companion.kotlin,
-          it.parameters.map { it.type.kotlin },
-          it.returnType.kotlin,
-          it
+          method.parameters.map { it.type.kotlin },
+          method.returnType.kotlin,
+          method
         )
       }
     }

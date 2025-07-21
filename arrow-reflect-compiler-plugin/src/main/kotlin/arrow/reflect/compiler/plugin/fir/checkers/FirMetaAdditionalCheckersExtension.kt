@@ -71,7 +71,6 @@ class FirMetaAdditionalCheckersExtension(
     if (element is FirAnnotationContainer) {
       if (element.isMetaAnnotated(session)) {
         val annotations = element.metaAnnotations(session)
-        println("[DEBUG] Invoking checker for element: ${element::class.simpleName} with ${annotations.size} meta annotations")
         val metaContext = FirMetaCheckerContext(templateCompiler, session, context, reporter)
         invokeMeta<E, Unit>(
           false,
@@ -109,9 +108,6 @@ fun FirAnnotationContainer.metaAnnotations(session: FirSession): List<FirAnnotat
     toResolvedCallableSymbol()?.fir?.metaAnnotations(session).orEmpty()
   } else emptyList()
   
-  if (elementAnnotations.isNotEmpty() || ownerAnnotations.isNotEmpty()) {
-    println("[DEBUG] Found meta annotations on ${this::class.simpleName}: element=${elementAnnotations.size}, owner=${ownerAnnotations.size}")
-  }
   
   return elementAnnotations + ownerAnnotations
 }

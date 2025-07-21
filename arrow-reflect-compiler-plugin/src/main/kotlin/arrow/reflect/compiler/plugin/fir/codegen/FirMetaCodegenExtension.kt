@@ -107,7 +107,9 @@ class FirMetaCodegenExtension(
           ?: invokeMeta(false, metaContext(context), metaAnnotations, superType, "functions", context)
       val patched = patchedfunctions(functions, callableId, context)
       patched?.map { it.symbol } ?: super.generateFunctions(callableId, context)
-    } else super.generateFunctions(callableId, context)
+    } else {
+      super.generateFunctions(callableId, context)
+    }
   }
 
   private fun patchedfunctions(

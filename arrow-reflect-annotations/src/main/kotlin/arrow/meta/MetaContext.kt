@@ -4,11 +4,11 @@ import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
-import org.jetbrains.kotlin.diagnostics.AbstractSourceElementPositioningStrategy
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.diagnostics.KtDiagnosticFactory1
 import org.jetbrains.kotlin.diagnostics.reportOn
-import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.FirElement
+import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.buildRegularClassCopy
@@ -23,8 +23,6 @@ import org.jetbrains.kotlin.fir.types.FirTypeRef
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.renderReadableWithFqNames
 import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
-import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.text
@@ -110,6 +108,7 @@ abstract class FirMetaContext(
       val results = templateCompiler.compileSource(
         this@FirMetaContext as? FirMetaCheckerContext,
         this,
+        extendedAnalysisMode = false,
         scopeDeclarations
       )
       val firFiles = results.firResults.flatMap { it.files }
@@ -122,6 +121,7 @@ abstract class FirMetaContext(
       val results = templateCompiler.compileSource(
         this@FirMetaContext as? FirMetaCheckerContext,
         this,
+        false,
         scopeDeclarations
       )
       val firFiles = results.firResults.flatMap { it.files }
@@ -148,6 +148,7 @@ abstract class FirMetaContext(
     val results = templateCompiler.compileSource(
       this@FirMetaContext as? FirMetaCheckerContext,
       source,
+      false,
       scopeDeclarations
     )
     val firFiles = results.firResults.flatMap { it.files }
