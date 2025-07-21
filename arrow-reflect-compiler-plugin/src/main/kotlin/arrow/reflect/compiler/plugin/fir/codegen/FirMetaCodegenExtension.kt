@@ -9,6 +9,9 @@ import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCall
+import org.jetbrains.kotlin.fir.expressions.builder.buildLiteralExpression
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.extensions.AnnotationFqn
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
@@ -20,12 +23,14 @@ import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.types.constructType
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeLookupTagBasedType
+import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.text
+import org.jetbrains.kotlin.types.ConstantValueKind
 
 @OptIn(org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi::class)
 class FirMetaCodegenExtension(
@@ -112,10 +117,7 @@ class FirMetaCodegenExtension(
   ): List<FirSimpleFunction>? = functions?.map { simpleFunction ->
     buildSimpleFunctionCopy(simpleFunction) {
       resolvePhase = FirResolvePhase.BODY_RESOLVE
-      symbol =
-        FirNamedFunctionSymbol(callableId).also {
-          // it.bind(simpleFunction)
-        }
+      symbol = FirNamedFunctionSymbol(callableId)
       dispatchReceiverType = context.owner.defaultType()
     }
   }

@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.test.builders.firHandlersStep
 import org.jetbrains.kotlin.test.frontend.fir.handlers.FirDumpHandler
 import org.jetbrains.kotlin.test.model.FrontendKinds
 import org.jetbrains.kotlin.test.services.configuration.CommonEnvironmentConfigurator
+import org.jetbrains.kotlin.test.services.configuration.JvmEnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.sourceProviders.MainFunctionForBlackBoxTestsSourceProvider
 import org.jetbrains.kotlin.test.services.EnvironmentBasedStandardLibrariesPathProvider
 import org.jetbrains.kotlin.test.services.KotlinStandardLibrariesPathProvider
@@ -52,6 +53,7 @@ fun TestConfigurationBuilder.commonFirWithPluginFrontendConfiguration() {
   
   useConfigurators(
     ::CommonEnvironmentConfigurator,
+    ::JvmEnvironmentConfigurator,
     ::PluginAnnotationsConfigurator,
     ::ExtensionRegistrarConfigurator
   )
