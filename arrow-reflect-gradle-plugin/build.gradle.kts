@@ -1,4 +1,6 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.internal.ensureParentDirsCreated
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   `java-gradle-plugin`
@@ -24,6 +26,17 @@ tasks {
   dokkaHtml { enabled = false }
   dokkaJavadoc { enabled = false }
   dokkaJekyll { enabled = false }
+
+  withType<JavaCompile>().configureEach {
+    sourceCompatibility = "${JavaVersion.VERSION_1_8}"
+    targetCompatibility = "${JavaVersion.VERSION_1_8}"
+  }
+
+  withType<KotlinCompile>().configureEach {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.JVM_1_8)
+    }
+  }
 }
 
 gradlePlugin {
@@ -73,10 +86,4 @@ fun generateArrowReflectVersionFile() {
     }
 
   kotlin.sourceSets.map { it.kotlin.srcDirs(generatedDir) }
-}
-
-kotlin {
-  jvmToolchain {
-    languageVersion.set(JavaLanguageVersion.of(8)) // "8"
-  }
 }

@@ -110,7 +110,6 @@ abstract class FirMetaContext(
       val results = templateCompiler.compileSource(
         this@FirMetaContext as? FirMetaCheckerContext,
         this,
-        extendedAnalysisMode = false,
         scopeDeclarations
       )
       val firFiles = results.firResults.flatMap { it.files }
@@ -123,7 +122,6 @@ abstract class FirMetaContext(
       val results = templateCompiler.compileSource(
         this@FirMetaContext as? FirMetaCheckerContext,
         this,
-        extendedAnalysisMode = false,
         scopeDeclarations
       )
       val firFiles = results.firResults.flatMap { it.files }
@@ -150,7 +148,6 @@ abstract class FirMetaContext(
     val results = templateCompiler.compileSource(
       this@FirMetaContext as? FirMetaCheckerContext,
       source,
-      extendedAnalysisMode = false,
       scopeDeclarations
     )
     val firFiles = results.firResults.flatMap { it.files }
