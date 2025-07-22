@@ -66,7 +66,7 @@ tasks.withType<KotlinCompile>().configureEach {
   }
 }
 
-tasks.create<JavaExec>("generateTests") {
+tasks.register<JavaExec>("generateTests") {
   classpath = sourceSets.test.get().runtimeClasspath
   mainClass.set("arrow.reflect.compiler.plugin.GenerateTestsKt")
 
@@ -103,6 +103,6 @@ fun Test.setLibraryProperty(propName: String, jarName: String) {
 
 kotlin {
   jvmToolchain {
-    languageVersion.set(JavaLanguageVersion.of(8)) // "8"
+    languageVersion.set(JavaLanguageVersion.of(11)) // "11"
   }
 }
