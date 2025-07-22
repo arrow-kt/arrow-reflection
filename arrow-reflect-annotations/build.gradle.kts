@@ -28,7 +28,7 @@ tasks {
 
 kotlin {
   jvmToolchain {
-    languageVersion.set(JavaLanguageVersion.of(8)) // "8"
+    languageVersion.set(JavaLanguageVersion.of(11)) // "11"
   }
 }
 

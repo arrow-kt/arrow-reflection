@@ -10,6 +10,12 @@ dependencies {
   runtimeOnly(project(":arrow-reflect-annotations"))
 }
 
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of(11))
+  }
+}
+
 tasks {
   named<Delete>("clean") {
     delete("$rootDir/docs/docs/apidocs")
