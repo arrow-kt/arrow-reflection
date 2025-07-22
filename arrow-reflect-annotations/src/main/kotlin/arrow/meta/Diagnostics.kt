@@ -35,8 +35,7 @@ abstract class Diagnostics(val head: KtDiagnosticFactory1<String>, vararg factor
       source,
       factory,
       msg,
-      context,
-      AbstractSourceElementPositioningStrategy.DEFAULT
+      context
     )
   }
 }

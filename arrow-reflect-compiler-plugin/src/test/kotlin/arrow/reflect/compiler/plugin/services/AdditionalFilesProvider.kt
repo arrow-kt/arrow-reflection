@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.test.directives.model.SimpleDirective
 import org.jetbrains.kotlin.test.model.TestFile
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.AdditionalSourceProvider
+import org.jetbrains.kotlin.test.services.TestModuleStructure
 import org.jetbrains.kotlin.test.services.TestServices
 
 class AdditionalFilesProvider(
@@ -26,7 +27,8 @@ class AdditionalFilesProvider(
 
   override fun produceAdditionalFiles(
     globalDirectives: RegisteredDirectives,
-    module: TestModule
+    module: TestModule,
+    testModuleStructure: TestModuleStructure
   ): List<TestFile> {
     return buildList {
       for ((directive, path) in directiveToFileMap) {

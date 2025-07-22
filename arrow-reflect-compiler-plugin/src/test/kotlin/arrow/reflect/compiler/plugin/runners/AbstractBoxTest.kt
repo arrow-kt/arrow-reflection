@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.test.backend.handlers.IrTreeVerifierHandler
 import org.jetbrains.kotlin.test.backend.handlers.JvmBoxRunner
 import org.jetbrains.kotlin.test.backend.ir.JvmIrBackendFacade
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
-import org.jetbrains.kotlin.test.builders.fir2IrStep
 import org.jetbrains.kotlin.test.builders.irHandlersStep
 import org.jetbrains.kotlin.test.builders.jvmArtifactsHandlersStep
 import org.jetbrains.kotlin.test.directives.CodegenTestDirectives.DUMP_IR
@@ -16,19 +15,25 @@ import org.jetbrains.kotlin.test.runners.RunnerWithTargetBackendForTestGenerator
 open class AbstractBoxTest : BaseTestRunner(), RunnerWithTargetBackendForTestGeneratorMarker {
   override val targetBackend: TargetBackend = TargetBackend.JVM_IR
 
-  override fun TestConfigurationBuilder.configuration() {
-    defaultDirectives { +DUMP_IR }
-
+  override fun configure(builder: TestConfigurationBuilder) = with(builder) {
     commonFirWithPluginFrontendConfiguration()
-    fir2IrStep()
+    
+    defaultDirectives { 
+      +DUMP_IR 
+    }
+    
     irHandlersStep {
       useHandlers(
         ::IrTextDumpHandler,
         ::IrTreeVerifierHandler,
       )
     }
+    
     facadeStep(::JvmIrBackendFacade)
-    jvmArtifactsHandlersStep { useHandlers(::JvmBoxRunner) }
+    
+    jvmArtifactsHandlersStep { 
+      useHandlers(::JvmBoxRunner) 
+    }
 
     useAfterAnalysisCheckers(::BlackBoxCodegenSuppressor)
   }

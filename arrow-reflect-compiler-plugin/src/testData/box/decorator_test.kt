@@ -1,3 +1,5 @@
+// WITH_STDLIB
+// MODULE: main
 package foo.bar
 
 import arrow.meta.samples.Decorator

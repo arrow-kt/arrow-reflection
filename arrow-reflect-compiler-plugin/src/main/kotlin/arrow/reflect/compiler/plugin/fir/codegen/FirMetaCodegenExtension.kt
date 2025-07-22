@@ -9,23 +9,30 @@ import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCall
+import org.jetbrains.kotlin.fir.expressions.builder.buildLiteralExpression
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.extensions.AnnotationFqn
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
+import org.jetbrains.kotlin.fir.extensions.NestedClassGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
+import org.jetbrains.kotlin.fir.types.constructType
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeLookupTagBasedType
-import org.jetbrains.kotlin.fir.types.constructType
+import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.text
+import org.jetbrains.kotlin.types.ConstantValueKind
 
+@OptIn(org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi::class)
 class FirMetaCodegenExtension(
   session: FirSession,
   val templateCompiler: TemplateCompiler,
@@ -37,23 +44,23 @@ class FirMetaCodegenExtension(
   private fun metaContext(generationContext: MemberGenerationContext?): FirMetaContext =
     FirMetaMemberGenerationContext(templateCompiler, session, generationContext)
 
-  override fun generateNestedClassLikeDeclaration(owner: FirClassSymbol<*>, name: Name): FirClassLikeSymbol<*>? {
-    return if (!templateCompiler.compiling) {
-      val firClass: FirClass? = invokeMeta(
-        true,
-        metaContext(null),
-        emptyList(),
-        Meta.Generate.Members.NestedClasses::class,
-        "nestedClasses"
-      )
-      firClass?.symbol ?: super.generateNestedClassLikeDeclaration(owner, name)
-    } else null
-  }
-
+  @OptIn(org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi::class)
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*>? {
+    val x = 0
     return if (!templateCompiler.compiling) {
-      val firClass: FirClass? = invokeMeta(true, metaContext(null), emptyList(), Meta.Generate.TopLevel.Class::class, "classes", classId)
-      firClass?.symbol ?: super.generateTopLevelClassLikeDeclaration(classId)
+      val firClass: FirClass? =
+        if (!classId.isNestedClass)
+          invokeMeta(true, metaContext(null), emptyList(), Meta.Generate.TopLevel.Class::class, "classes", classId)
+        else
+          invokeMeta(
+            true,
+            metaContext(null),
+            emptyList(),
+            Meta.Generate.Members.NestedClasses::class,
+            "nestedClasses",
+            classId
+          )
+      firClass?.symbol
     } else null
   }
 
@@ -98,19 +105,11 @@ class FirMetaCodegenExtension(
       val functions: List<FirSimpleFunction>? =
         invokeMeta(false, metaContext(context), metaAnnotations, superType, "functions", callableId, context)
           ?: invokeMeta(false, metaContext(context), metaAnnotations, superType, "functions", context)
-      val decls = context.owner.fir.declarations as? MutableList<FirDeclaration>
       val patched = patchedfunctions(functions, callableId, context)
-
-      patched?.firstOrNull()?.accept(object : FirVisitor<Unit, Unit>() {
-        override fun visitElement(element: FirElement, data: Unit) {
-          println(element::class.simpleName + " in file:" + element.source.text)
-          element.acceptChildren(this, data)
-        }
-      }, Unit)
-
-      decls?.addAll(patched.orEmpty())
       patched?.map { it.symbol } ?: super.generateFunctions(callableId, context)
-    } else super.generateFunctions(callableId, context)
+    } else {
+      super.generateFunctions(callableId, context)
+    }
   }
 
   private fun patchedfunctions(
@@ -120,10 +119,7 @@ class FirMetaCodegenExtension(
   ): List<FirSimpleFunction>? = functions?.map { simpleFunction ->
     buildSimpleFunctionCopy(simpleFunction) {
       resolvePhase = FirResolvePhase.BODY_RESOLVE
-      symbol =
-        FirNamedFunctionSymbol(callableId).also {
-          // it.bind(simpleFunction)
-        }
+      symbol = FirNamedFunctionSymbol(callableId)
       dispatchReceiverType = context.owner.defaultType()
     }
   }
@@ -142,7 +138,7 @@ class FirMetaCodegenExtension(
     } else super.generateProperties(callableId, context)
   }
 
-  override fun getCallableNamesForClass(classSymbol: FirClassSymbol<*>): Set<Name> =
+  override fun getCallableNamesForClass(classSymbol: FirClassSymbol<*>, context: MemberGenerationContext): Set<Name> =
     constructors(classSymbol).orEmpty() +
       properties(classSymbol).orEmpty() +
       functions(classSymbol).orEmpty()
@@ -197,7 +193,7 @@ class FirMetaCodegenExtension(
     )
   // else null
 
-  override fun getNestedClassifiersNames(classSymbol: FirClassSymbol<*>): Set<Name> =
+  override fun getNestedClassifiersNames(classSymbol: FirClassSymbol<*>, context: NestedClassGenerationContext): Set<Name> =
     nestedClasses(classSymbol).orEmpty()
 
   fun topLevelFunctions(): Set<CallableId>? =
@@ -210,9 +206,11 @@ class FirMetaCodegenExtension(
   fun topLevelProperties(): Set<CallableId>? =
     invokeMeta(false, metaContext(null), emptyList(), Meta.Generate.TopLevel.Properties::class, "properties")
 
+  @OptIn(org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi::class)
   override fun getTopLevelCallableIds(): Set<CallableId> =
     topLevelProperties().orEmpty() + topLevelFunctions().orEmpty()
 
+  @OptIn(org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi::class)
   override fun getTopLevelClassIds(): Set<ClassId> =
     topLevelClasses().orEmpty()
 
@@ -222,7 +220,9 @@ class FirMetaCodegenExtension(
 
 
   val metaAnnotatedPredicate: DeclarationPredicate
-    get() = DeclarationPredicate.create { metaAnnotated(listOf(AnnotationFqn("arrow.meta.Meta")), false) }
+    get() = DeclarationPredicate.create { 
+      metaAnnotated(setOf(FqName("arrow.meta.Meta")), includeItself = true) 
+    }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(metaAnnotatedPredicate)

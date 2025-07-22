@@ -10,6 +10,8 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.FirAnnotationContainer
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.analysis.checkers.MppCheckerKind
+import org.jetbrains.kotlin.fir.declarations.toAnnotationClassId
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.analysis.checkers.declaration.DeclarationCheckers
 import org.jetbrains.kotlin.fir.analysis.checkers.declaration.FirBasicDeclarationChecker
@@ -21,11 +23,9 @@ import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.declarations.FirFile
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.resolve.fqName
-import org.jetbrains.kotlin.fir.resolve.getCorrespondingClassSymbolOrNull
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.name.FqName
 import kotlin.reflect.KClass
-import org.jetbrains.kotlin.name.ClassId
 
 class FirMetaAdditionalCheckersExtension(
   session: FirSession,
@@ -37,7 +37,8 @@ class FirMetaAdditionalCheckersExtension(
 
   override val declarationCheckers: DeclarationCheckers = object : DeclarationCheckers() {
     override val basicDeclarationCheckers: Set<FirBasicDeclarationChecker> = setOf(
-      object : FirBasicDeclarationChecker() {
+      object : FirBasicDeclarationChecker(MppCheckerKind.Common) {
+        @OptIn(org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi::class)
         override fun check(declaration: FirDeclaration, context: CheckerContext, reporter: DiagnosticReporter) {
           invokeChecker(Meta.Checker.Declaration::class, declaration, session, context, reporter)
           if (!templateCompiler.compiling && declaration is FirFile) {
@@ -51,7 +52,8 @@ class FirMetaAdditionalCheckersExtension(
 
   override val expressionCheckers: ExpressionCheckers = object : ExpressionCheckers() {
     override val basicExpressionCheckers: Set<FirBasicExpressionChecker> = setOf(
-      object : FirBasicExpressionChecker() {
+      object : FirBasicExpressionChecker(MppCheckerKind.Common) {
+        @OptIn(org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi::class)
         override fun check(expression: FirStatement, context: CheckerContext, reporter: DiagnosticReporter) {
           invokeChecker(Meta.Checker.Expression::class, expression, session, context, reporter)
         }
@@ -66,7 +68,8 @@ class FirMetaAdditionalCheckersExtension(
       context: CheckerContext,
       reporter: DiagnosticReporter
   ) {
-    if (element is FirAnnotationContainer && element.isMetaAnnotated(session)) {
+    if (element is FirAnnotationContainer) {
+      if (element.isMetaAnnotated(session)) {
         val annotations = element.metaAnnotations(session)
         val metaContext = FirMetaCheckerContext(templateCompiler, session, context, reporter)
         invokeMeta<E, Unit>(
@@ -79,6 +82,7 @@ class FirMetaAdditionalCheckersExtension(
         )
       }
     }
+  }
 
   override val typeCheckers: TypeCheckers
     get() = super.typeCheckers
@@ -86,14 +90,25 @@ class FirMetaAdditionalCheckersExtension(
 }
 
 fun FirAnnotationContainer.metaAnnotations(session: FirSession): List<FirAnnotation> {
-  val elementAnnotations = annotations.filter { annotation ->
-    val annotationSymbol = annotation.getCorrespondingClassSymbolOrNull(session)
-    val metaAnnotations = annotationSymbol?.annotations.orEmpty()
-    with(metaAnnotations) { isNotEmpty() && any { it.fqName(session) == FqName(Meta::class.java.canonicalName) } }
+  val elementAnnotations = annotations.filter {
+    val annotation = it.toAnnotationClassId(session)
+    if (annotation != null) {
+      val annotationSymbol = session.symbolProvider.getClassLikeSymbolByClassId(annotation)
+      val metaAnnotations = annotationSymbol?.annotations.orEmpty()
+      if (metaAnnotations.isEmpty()) {
+        false
+      } else {
+        metaAnnotations.any {
+          it.fqName(session) == FqName(Meta::class.java.canonicalName)
+        }
+      }
+    } else false
   }
   val ownerAnnotations: List<FirAnnotation> = if (this is FirFunctionCall) {
     toResolvedCallableSymbol()?.fir?.metaAnnotations(session).orEmpty()
   } else emptyList()
+  
+  
   return elementAnnotations + ownerAnnotations
 }
 

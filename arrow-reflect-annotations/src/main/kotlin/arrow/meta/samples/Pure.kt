@@ -46,9 +46,12 @@ annotation class Pure {
     }
 
   }
-
 }
 
+@Pure
+fun restrictEffects(fn: FirSimpleFunction) {
+  // Function implementation
+}
 
 
 

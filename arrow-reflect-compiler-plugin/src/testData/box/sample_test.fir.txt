@@ -1,8 +1,8 @@
-FILE: sample_test.kt
+FILE: module_main_sample_test.kt
     package foo.bar
 
     public final fun box(): R|kotlin/String| {
-        lval x: R|kotlin/Int| = Int(0).R|kotlin/Int.plus|(Int(1))
+        lval x: R|kotlin/Int| = @R|arrow/meta/samples/Increment|() Int(0)
         ^box when () {
             ==(R|<local>/x|, Int(1)) ->  {
                 String(OK)

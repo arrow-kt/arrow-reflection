@@ -13,6 +13,10 @@ pluginManagement {
   }
 }
 
+plugins {
+  id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+}
+
 dependencyResolutionManagement {
   repositories {
     mavenCentral()
@@ -42,8 +46,8 @@ include(
 )
 
 // Docs
-include(":arrow-reflect-docs")
-project(":arrow-reflect-docs").projectDir = File("docs")
+//include(":arrow-reflect-docs")
+//project(":arrow-reflect-docs").projectDir = File("docs")
 
 val localProperties =
   java.util.Properties().apply {
