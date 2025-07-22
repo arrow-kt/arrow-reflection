@@ -46,8 +46,8 @@ include(
 )
 
 // Docs
-include(":arrow-reflect-docs")
-project(":arrow-reflect-docs").projectDir = File("docs")
+//include(":arrow-reflect-docs")
+//project(":arrow-reflect-docs").projectDir = File("docs")
 
 val localProperties =
   java.util.Properties().apply {
