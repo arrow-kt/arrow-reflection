@@ -1,0 +1,35 @@
+package arrow.meta.module.impl.arrow.meta.module.macro
+
+import arrow.meta.module.impl.arrow.meta.macro.Macro
+import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsContext
+import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroCompilation
+import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroContext
+import arrow.meta.samples.Errors.error1
+import arrow.meta.samples.Log
+import org.jetbrains.kotlin.fir.FirElement
+import org.jetbrains.kotlin.fir.declarations.FirDeclaration
+import org.jetbrains.kotlin.fir.expressions.FirExpression
+
+private val META_LOG by error1()
+
+@Macro(targets = [Log::class])
+fun MacroContext.logMacro(firDeclaration: FirDeclaration): MacroCompilation {
+  return diagnostics {
+    checkElement(expression = firDeclaration)
+  }
+}
+
+@Macro(targets = [Log::class])
+fun MacroContext.logMacro(firDeclaration: FirExpression): MacroCompilation {
+  return diagnostics {
+    checkElement(expression = firDeclaration)
+  }
+}
+
+private fun DiagnosticsContext.checkElement(
+  expression: FirElement
+) {
+  expression.report(
+    META_LOG, "found error on expression: $expression"
+  )
+}

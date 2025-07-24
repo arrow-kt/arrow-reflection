@@ -1,4 +1,6 @@
 package arrow.meta.module.impl.arrow.meta.macro
 
+import kotlin.reflect.KClass
+
 @Target(AnnotationTarget.FUNCTION)
-annotation class Macro
+annotation class Macro(val targets: Array<KClass<*>> = [])

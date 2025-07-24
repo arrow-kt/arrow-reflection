@@ -1,4 +1,4 @@
-package arrow.meta.module.impl.arrow.meta.macro
+package arrow.meta.module.impl.arrow.meta.macro.compilation
 
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.diagnostics.KtDiagnosticFactory1
@@ -6,8 +6,10 @@ import org.jetbrains.kotlin.diagnostics.reportOn
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 
-data class MacroContext(
-  val diagnosticReporter: DiagnosticReporter,
+interface DiagnosticsCompilation : MacroCompilation
+
+data class DiagnosticsContext(
+  private val diagnosticReporter: DiagnosticReporter,
   private val checkerContext: CheckerContext
 ) {
 
