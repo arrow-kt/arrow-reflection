@@ -4,10 +4,15 @@ import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.checkers.FirMetaAdditionalCheckersExtension
 import arrow.reflect.compiler.plugin.fir.codegen.FirMetaCodegenExtension
 import arrow.reflect.compiler.plugin.targets.MetaTarget
+import arrow.reflect.compiler.plugin.targets.macro.MacroInvoke
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 
-class FirArrowReflectExtensionRegistrar(val templateCompiler: TemplateCompiler, val metaTargets: List<MetaTarget>) :
+class FirArrowReflectExtensionRegistrar(
+  val templateCompiler: TemplateCompiler,
+  val metaTargets: List<MetaTarget>,
+  val macro: MacroInvoke
+) :
   FirExtensionRegistrar() {
 
   override fun ExtensionRegistrarContext.configurePlugin() {
@@ -17,7 +22,7 @@ class FirArrowReflectExtensionRegistrar(val templateCompiler: TemplateCompiler, 
     }
     +{ session: FirSession ->
       templateCompiler.session = session
-      FirMetaAdditionalCheckersExtension(session, templateCompiler, metaTargets)
+      FirMetaAdditionalCheckersExtension(session, templateCompiler, metaTargets, macro)
     }
   }
 

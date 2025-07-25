@@ -1,0 +1,13 @@
+FILE: macro_sample.kt
+    package foo.bar
+
+    public final class MacroSample : R|kotlin/Any| {
+        public constructor(): R|foo/bar/MacroSample| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final fun foo(): R|kotlin/String| {
+            ^foo String(bar)
+        }
+
+    }

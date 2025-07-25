@@ -6,7 +6,10 @@ import org.jetbrains.kotlin.diagnostics.reportOn
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 
-interface DiagnosticsCompilation : MacroCompilation
+interface DiagnosticsCompilation : MacroCompilation {
+
+  fun runCompilation(context: DiagnosticsContext)
+}
 
 data class DiagnosticsContext(
   private val diagnosticReporter: DiagnosticReporter,

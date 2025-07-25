@@ -33,6 +33,12 @@ public class DiagnosticTestGenerated extends AbstractDiagnosticTest {
   }
 
   @Test
+  @TestMetadata("macro_sample.kt")
+  public void testMacro_sample() {
+    runTest("src/testData/diagnostics/macro_sample.kt");
+  }
+
+  @Test
   @TestMetadata("pure_test.kt")
   public void testPure_test() {
     runTest("src/testData/diagnostics/pure_test.kt");

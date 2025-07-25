@@ -18,10 +18,10 @@ class ExtensionRegistrarConfigurator(
     module: TestModule,
     configuration: CompilerConfiguration
   ) {
-    val macroTargets = ClasspathMacroScanner.classpathMacroScanner()
+    val macro = ClasspathMacroScanner.scanMacros()
     val metaTargets = ClasspathMetaScanner.classPathMetaTargets()
     val templateCompiler = TemplateCompiler(configuration)
-    FirExtensionRegistrarAdapter.registerExtension(FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets))
+    FirExtensionRegistrarAdapter.registerExtension(FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets, macro))
   }
 }
 
