@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.diagnostics.KtDiagnosticFactory1
 import org.jetbrains.kotlin.diagnostics.reportOn
 import org.jetbrains.kotlin.fir.FirElement
+import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 
 interface DiagnosticsCompilation : MacroCompilation {
@@ -12,6 +13,7 @@ interface DiagnosticsCompilation : MacroCompilation {
 }
 
 data class DiagnosticsContext(
+  val session: FirSession,
   private val diagnosticReporter: DiagnosticReporter,
   private val checkerContext: CheckerContext
 ) {

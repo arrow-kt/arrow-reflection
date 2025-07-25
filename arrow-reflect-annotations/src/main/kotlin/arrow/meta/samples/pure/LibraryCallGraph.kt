@@ -1,12 +1,12 @@
 package arrow.meta.samples.pure
 
-import arrow.meta.FirMetaCheckerContext
+import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsContext
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.org.objectweb.asm.*
 import java.lang.reflect.Method
 
-internal fun FirMetaCheckerContext.createLibraryCallGraph(
+internal fun DiagnosticsContext.createLibraryCallGraph(
   call : FirFunctionCall?,
   function: Method, cache: ProcessingCache
 ): RemoteFunction {

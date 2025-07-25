@@ -13,16 +13,16 @@ import org.jetbrains.kotlin.fir.expressions.FirExpression
 private val META_LOG by error1()
 
 @Macro(target = Log::class)
-fun MacroContext.logMacro(firDeclaration: FirDeclaration): MacroCompilation {
+fun MacroContext.log(declaration: FirDeclaration): MacroCompilation {
   return diagnostics {
-    checkElement(expression = firDeclaration)
+    checkElement(expression = declaration)
   }
 }
 
 @Macro(target = Log::class)
-fun MacroContext.logMacro(firDeclaration: FirExpression): MacroCompilation {
+fun MacroContext.log(expression: FirExpression): MacroCompilation {
   return diagnostics {
-    checkElement(expression = firDeclaration)
+    checkElement(expression = expression)
   }
 }
 

@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.fir.declarations.utils.nameOrSpecialName
 private val MACRO_SAMPLE by error1()
 
 @Macro
-fun MacroContext.macroSample(firClass: FirClass): MacroCompilation {
+fun MacroContext.macro(firClass: FirClass): MacroCompilation {
   return diagnostics {
     if (firClass.nameOrSpecialName.identifier == "MacroSample") {
       firClass.report(MACRO_SAMPLE, "macro sample")

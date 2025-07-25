@@ -1,14 +1,13 @@
 package arrow.meta.samples.pure
 
-import arrow.meta.FirMetaCheckerContext
+import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsContext
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
 import org.jetbrains.kotlin.fir.expressions.toResolvedCallableSymbol
-import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 
-internal fun FirMetaCheckerContext.createLocalCallGraph(
+internal fun DiagnosticsContext.createLocalCallGraph(
   call : FirFunctionCall?,
   function: FirSimpleFunction, cache: ProcessingCache
 ): LocalFunction {

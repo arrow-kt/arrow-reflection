@@ -79,6 +79,7 @@ class FirMetaAdditionalCheckersExtension(
     context: CheckerContext
   ) {
     val diagnosticsContext = DiagnosticsContext(
+      session = session,
       diagnosticReporter = reporter,
       checkerContext = context
     )
