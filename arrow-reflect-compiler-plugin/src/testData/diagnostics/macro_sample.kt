@@ -4,3 +4,8 @@ package foo.bar
 
   fun foo(): String = "bar"
 }<!>
+
+class MacroSample2 {
+
+  fun foo(): String = "bar"
+}

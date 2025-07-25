@@ -11,3 +11,13 @@ FILE: macro_sample.kt
         }
 
     }
+    public final class MacroSample2 : R|kotlin/Any| {
+        public constructor(): R|foo/bar/MacroSample2| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final fun foo(): R|kotlin/String| {
+            ^foo String(bar)
+        }
+
+    }
