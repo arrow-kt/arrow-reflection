@@ -3,6 +3,7 @@ package arrow.reflect.compiler.plugin.services
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.FirArrowReflectExtensionRegistrar
 import arrow.reflect.compiler.plugin.targets.ClasspathMetaScanner
+import arrow.reflect.compiler.plugin.targets.macro.ClasspathMacroScanner
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
@@ -17,9 +18,10 @@ class ExtensionRegistrarConfigurator(
     module: TestModule,
     configuration: CompilerConfiguration
   ) {
+    val macro = ClasspathMacroScanner.scanMacros()
     val metaTargets = ClasspathMetaScanner.classPathMetaTargets()
     val templateCompiler = TemplateCompiler(configuration)
-    FirExtensionRegistrarAdapter.registerExtension(FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets))
+    FirExtensionRegistrarAdapter.registerExtension(FirArrowReflectExtensionRegistrar(templateCompiler, metaTargets, macro))
   }
 }
 

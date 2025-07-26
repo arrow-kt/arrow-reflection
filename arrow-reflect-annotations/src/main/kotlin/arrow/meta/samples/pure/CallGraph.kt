@@ -1,6 +1,6 @@
 package arrow.meta.samples.pure
 
-import arrow.meta.FirMetaCheckerContext
+import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsContext
 import org.jetbrains.kotlin.fir.declarations.FirDeclarationOrigin
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-fun FirMetaCheckerContext.createCallGraph(
+fun DiagnosticsContext.createCallGraph(
   call: FirFunctionCall?,
   function: FirSimpleFunction,
   cache: ProcessingCache = ProcessingCache(mutableSetOf(), mutableSetOf(), mutableSetOf(), mutableSetOf())
