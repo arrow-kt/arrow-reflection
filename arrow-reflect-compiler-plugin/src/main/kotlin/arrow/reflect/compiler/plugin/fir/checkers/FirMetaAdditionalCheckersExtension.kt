@@ -49,8 +49,8 @@ class FirMetaAdditionalCheckersExtension(
       object : FirBasicDeclarationChecker(MppCheckerKind.Common) {
         @OptIn(org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi::class)
         override fun check(declaration: FirDeclaration, context: CheckerContext, reporter: DiagnosticReporter) {
-          invokeChecker(Meta.Checker.Declaration::class, declaration, session, context, reporter)
           invokeMacro(session, declaration, reporter, context)
+          invokeChecker(Meta.Checker.Declaration::class, declaration, session, context, reporter)
           if (!templateCompiler.compiling && declaration is FirFile) {
             val transformer = FirMetaTransformer(session, templateCompiler, metaTargets, context, reporter)
             transformer.transformDeclaration(declaration, declaration)
@@ -65,8 +65,8 @@ class FirMetaAdditionalCheckersExtension(
       object : FirBasicExpressionChecker(MppCheckerKind.Common) {
         @OptIn(org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi::class)
         override fun check(expression: FirStatement, context: CheckerContext, reporter: DiagnosticReporter) {
-          invokeChecker(Meta.Checker.Expression::class, expression, session, context, reporter)
           invokeMacro(session, expression, reporter, context)
+          invokeChecker(Meta.Checker.Expression::class, expression, session, context, reporter)
         }
       }
     )

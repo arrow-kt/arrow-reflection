@@ -30,6 +30,6 @@ private fun DiagnosticsContext.checkElement(
   expression: FirElement
 ) {
   expression.report(
-    META_LOG, "found error on expression: $expression"
+    META_LOG, "found error on expression: ${+expression}"
   )
 }
