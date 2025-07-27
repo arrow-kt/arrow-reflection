@@ -1,0 +1,32 @@
+FILE: phase4_validation_test.kt
+    package foo.bar
+
+    @R|arrow/meta/quotes/samples/WithValidation|() public final class ValidationTest : R|kotlin/Any| {
+        public constructor(): R|foo/bar/ValidationTest| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final fun processData(x: R|kotlin/Int|): R|kotlin/Int| {
+            ^processData R|<local>/x|.R|kotlin/Int.times|(Int(2))
+        }
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval test: R|foo/bar/ValidationTest| = R|foo/bar/ValidationTest.ValidationTest|()
+        try {
+            lval result: R|kotlin/Int| = R|<local>/test|.R|foo/bar/ValidationTest.validatedProcess|(Int(21))
+            ^box when () {
+                ==(R|<local>/result|, Int(42)) ->  {
+                    String(OK)
+                }
+                else ->  {
+                    <strcat>(String(FAIL: Expected 42 but got ), R|<local>/result|)
+                }
+            }
+
+        }
+        catch (e: R|{kotlin/Exception=} java/lang/Exception|) {
+            ^box <strcat>(String(FAIL: ), R|<local>/e|.<Unresolved name: message>#)
+        }
+
+    }

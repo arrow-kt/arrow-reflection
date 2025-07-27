@@ -1,0 +1,30 @@
+FILE: module_main_quasiquote_declare_function_test.kt
+    package foo.bar
+
+    @R|arrow/meta/quotes/samples/GenerateDoubleFunction|() public final class Calculator : R|kotlin/Any| {
+        public constructor(): R|foo/bar/Calculator| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final fun doubled(x: R|kotlin/Int|): R|kotlin/Int|
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval calc: R|foo/bar/Calculator| = R|foo/bar/Calculator.Calculator|()
+        ^box try {
+            lval result: R|kotlin/Int| = R|<local>/calc|.R|foo/bar/Calculator.doubled|(Int(21))
+            when () {
+                ==(R|<local>/result|, Int(42)) ->  {
+                    String(OK)
+                }
+                else ->  {
+                    <strcat>(String(FAIL: Expected 42 but got ), R|<local>/result|)
+                }
+            }
+
+        }
+        catch (e: R|{kotlin/Exception=} java/lang/Exception|) {
+            <strcat>(String(FAIL: ), R|<local>/e|.<Unresolved name: message>#)
+        }
+
+    }

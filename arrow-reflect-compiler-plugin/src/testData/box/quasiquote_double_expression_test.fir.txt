@@ -1,0 +1,15 @@
+FILE: module_main_quasiquote_double_expression_test.kt
+    package foo.bar
+
+    public final fun box(): R|kotlin/String| {
+        lval x: R|kotlin/Int| = @R|arrow/meta/quotes/samples/DoubleExpression|() Int(21)
+        ^box when () {
+            ==(R|<local>/x|, Int(42)) ->  {
+                String(OK)
+            }
+            else ->  {
+                <strcat>(String(FAIL: Expected 42 but got ), R|<local>/x|)
+            }
+        }
+
+    }

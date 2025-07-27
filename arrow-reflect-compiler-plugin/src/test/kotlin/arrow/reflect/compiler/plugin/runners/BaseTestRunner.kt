@@ -55,6 +55,7 @@ fun TestConfigurationBuilder.commonFirWithPluginFrontendConfiguration() {
     ::CommonEnvironmentConfigurator,
     ::JvmEnvironmentConfigurator,
     ::PluginAnnotationsConfigurator,
+    ::QuotesAnnotationsConfigurator,
     ::ExtensionRegistrarConfigurator
   )
   

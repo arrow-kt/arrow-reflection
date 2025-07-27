@@ -1,6 +1,8 @@
 package arrow.reflect.compiler.plugin.fir
 
 import arrow.meta.TemplateCompiler
+import arrow.meta.quotes.samples.GenerateDoubleFunctionExtension
+import arrow.meta.quotes.samples.SimpleQuasiquoteGenerateExtension
 import arrow.reflect.compiler.plugin.fir.checkers.FirMetaAdditionalCheckersExtension
 import arrow.reflect.compiler.plugin.fir.codegen.FirMetaCodegenExtension
 import arrow.reflect.compiler.plugin.targets.MetaTarget
@@ -23,6 +25,12 @@ class FirArrowReflectExtensionRegistrar(
     +{ session: FirSession ->
       templateCompiler.session = session
       FirMetaAdditionalCheckersExtension(session, templateCompiler, metaTargets, macro)
+    }
+    +{ session: FirSession ->
+      GenerateDoubleFunctionExtension(session)
+    }
+    +{ session: FirSession ->
+      SimpleQuasiquoteGenerateExtension(session)
     }
   }
 

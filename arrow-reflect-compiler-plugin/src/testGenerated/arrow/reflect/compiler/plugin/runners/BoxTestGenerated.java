@@ -28,6 +28,30 @@ public class BoxTestGenerated extends AbstractBoxTest {
   }
 
   @Test
+  @TestMetadata("phase4_hygiene_test.kt")
+  public void testPhase4_hygiene_test() {
+    runTest("src/testData/box/phase4_hygiene_test.kt");
+  }
+
+  @Test
+  @TestMetadata("phase4_patterns_test.kt")
+  public void testPhase4_patterns_test() {
+    runTest("src/testData/box/phase4_patterns_test.kt");
+  }
+
+  @Test
+  @TestMetadata("phase4_transform_test.kt")
+  public void testPhase4_transform_test() {
+    runTest("src/testData/box/phase4_transform_test.kt");
+  }
+
+  @Test
+  @TestMetadata("phase4_validation_test.kt")
+  public void testPhase4_validation_test() {
+    runTest("src/testData/box/phase4_validation_test.kt");
+  }
+
+  @Test
   @TestMetadata("product_test.kt")
   public void testProduct_test() {
     runTest("src/testData/box/product_test.kt");
@@ -40,8 +64,38 @@ public class BoxTestGenerated extends AbstractBoxTest {
   }
 
   @Test
+  @TestMetadata("quasiquote_conditional_test.kt")
+  public void testQuasiquote_conditional_test() {
+    runTest("src/testData/box/quasiquote_conditional_test.kt");
+  }
+
+  @Test
+  @TestMetadata("quasiquote_declare_function_test.kt")
+  public void testQuasiquote_declare_function_test() {
+    runTest("src/testData/box/quasiquote_declare_function_test.kt");
+  }
+
+  @Test
+  @TestMetadata("quasiquote_double_expression_test.kt")
+  public void testQuasiquote_double_expression_test() {
+    runTest("src/testData/box/quasiquote_double_expression_test.kt");
+  }
+
+  @Test
+  @TestMetadata("quasiquote_increment_test.kt")
+  public void testQuasiquote_increment_test() {
+    runTest("src/testData/box/quasiquote_increment_test.kt");
+  }
+
+  @Test
   @TestMetadata("sample_test.kt")
   public void testSample_test() {
     runTest("src/testData/box/sample_test.kt");
+  }
+
+  @Test
+  @TestMetadata("simple_declaration_builder_test.kt")
+  public void testSimple_declaration_builder_test() {
+    runTest("src/testData/box/simple_declaration_builder_test.kt");
   }
 }

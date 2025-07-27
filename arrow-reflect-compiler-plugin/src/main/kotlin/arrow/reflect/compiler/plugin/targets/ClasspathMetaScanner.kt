@@ -6,7 +6,9 @@ import io.github.classgraph.ClassInfoList
 
 internal object ClasspathMetaScanner {
   internal fun classPathMetaTargets(): List<MetaTarget> {
-    val result = ClassGraph().acceptPackages("arrow.meta.module.impl").enableAllInfo()
+    val result = ClassGraph()
+      .acceptPackages("arrow.meta.module.impl", "arrow.meta.quotes", "arrow.meta.quotes.module.impl")
+      .enableAllInfo()
       .scan()
     val metaModuleImpls: ClassInfoList = result.getClassesImplementing(Module::class.java)
     val metaTypes = metaModuleImpls.flatMap { moduleInfo ->

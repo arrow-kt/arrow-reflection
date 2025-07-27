@@ -1,0 +1,32 @@
+FILE: phase4_patterns_test.kt
+    package foo.bar
+
+    @R|arrow/meta/quotes/samples/WithPatternOptimization|() public final class PatternTest : R|kotlin/Any| {
+        public constructor(): R|foo/bar/PatternTest| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final fun compute(x: R|kotlin/Int|, y: R|kotlin/Int|): R|kotlin/Int| {
+            ^compute R|<local>/x|.R|kotlin/Int.plus|(R|<local>/y|)
+        }
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval test: R|foo/bar/PatternTest| = R|foo/bar/PatternTest.PatternTest|()
+        try {
+            lval result: R|kotlin/Int| = R|<local>/test|.R|foo/bar/PatternTest.optimizedCompute|(Int(5), Int(0))
+            ^box when () {
+                ==(R|<local>/result|, Int(5)) ->  {
+                    String(OK)
+                }
+                else ->  {
+                    <strcat>(String(FAIL: Expected 5 but got ), R|<local>/result|)
+                }
+            }
+
+        }
+        catch (e: R|{kotlin/Exception=} java/lang/Exception|) {
+            ^box <strcat>(String(FAIL: ), R|<local>/e|.<Unresolved name: message>#)
+        }
+
+    }

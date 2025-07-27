@@ -1,0 +1,17 @@
+FILE: module_main_simple_declaration_builder_test.kt
+    package foo.bar
+
+    @R|arrow/meta/quotes/samples/SimpleGenerateFactory|() public final class SimpleProduct : R|kotlin/Any| {
+        public constructor(): R|foo/bar/SimpleProduct| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final object Companion : R|kotlin/Any| {
+        }
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval companion: <ERROR TYPE REF: Unresolved name: Companion> = Q|foo/bar/SimpleProduct|.<Unresolved name: Companion>#
+        lval product: <ERROR TYPE REF: Unresolved name: create> = Q|foo/bar/SimpleProduct|.<Unresolved name: Companion>#.<Unresolved name: create>#()
+        ^box String(OK)
+    }

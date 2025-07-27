@@ -36,6 +36,7 @@ sourceSets {
 
 dependencies {
   implementation(project(":arrow-reflect-annotations"))
+  implementation(project(":arrow-reflection-quotes"))
   implementation(libs.classgraph)
   implementation(libs.kotlin.compiler)
 

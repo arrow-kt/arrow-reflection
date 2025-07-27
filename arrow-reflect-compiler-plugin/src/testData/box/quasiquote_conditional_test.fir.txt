@@ -1,0 +1,18 @@
+FILE: module_main_quasiquote_conditional_test.kt
+    package foo.bar
+
+    public final fun box(): R|kotlin/String| {
+        lval nullable: R|kotlin/Int?| = Null(null)
+        lval notNull: R|kotlin/String| = String(hello)
+        lval result1: R|kotlin/Int?| = @R|arrow/meta/quotes/samples/QuasiquoteConditional|() R|<local>/nullable|
+        lval result2: R|kotlin/String| = @R|arrow/meta/quotes/samples/QuasiquoteConditional|() R|<local>/notNull|
+        ^box when () {
+            ==(R|<local>/result1|, String(default)) && ==(R|<local>/result2|, String(hello)) ->  {
+                String(OK)
+            }
+            else ->  {
+                <strcat>(String(FAIL: result1=), R|<local>/result1|, String(, result2=), R|<local>/result2|)
+            }
+        }
+
+    }

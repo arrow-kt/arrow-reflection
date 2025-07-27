@@ -1,0 +1,33 @@
+FILE: phase4_hygiene_test.kt
+    package foo.bar
+
+    @R|arrow/meta/quotes/samples/WithHygiene|() public final class HygieneTest : R|kotlin/Any| {
+        public constructor(): R|foo/bar/HygieneTest| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final fun getValue(): R|kotlin/Int| {
+            ^getValue Int(42)
+        }
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval test: R|foo/bar/HygieneTest| = R|foo/bar/HygieneTest.HygieneTest|()
+        try {
+            lval value: R|kotlin/Int| = Int(10)
+            lval result: R|kotlin/Int| = R|<local>/test|.R|foo/bar/HygieneTest.processWithFreshBinding|(R|<local>/value|)
+            ^box when () {
+                ==(R|<local>/result|, Int(52)) ->  {
+                    String(OK)
+                }
+                else ->  {
+                    <strcat>(String(FAIL: Expected 52 but got ), R|<local>/result|)
+                }
+            }
+
+        }
+        catch (e: R|{kotlin/Exception=} java/lang/Exception|) {
+            ^box <strcat>(String(FAIL: ), R|<local>/e|.<Unresolved name: message>#)
+        }
+
+    }

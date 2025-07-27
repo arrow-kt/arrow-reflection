@@ -51,7 +51,20 @@ class PluginAnnotationsConfigurator(testServices: TestServices) :
 
 class MetaRuntimeClasspathProvider(testServices: TestServices) : RuntimeClasspathProvider(testServices) {
   override fun runtimeClassPaths(module: TestModule): List<File> {
-    return listOf(PluginAnnotationsConfigurator.jar(testServices))
+    val annotationsJar = PluginAnnotationsConfigurator.jar(testServices)
+    val quotesJarDir = File("../arrow-reflection-quotes/build/libs/")
+    val quotesJar = quotesJarDir.listFiles { _, name ->
+      name.startsWith("arrow-reflection-quotes") &&
+        name.endsWith(".jar") &&
+        !name.endsWith("-javadoc.jar") &&
+        !name.endsWith("-sources.jar")
+    }?.firstOrNull()
+    
+    return if (quotesJar != null) {
+      listOf(annotationsJar, quotesJar)
+    } else {
+      listOf(annotationsJar)
+    }
   }
 }
 

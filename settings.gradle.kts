@@ -43,6 +43,7 @@ include(
   ":arrow-reflect-annotations",
   ":arrow-reflect-compiler-plugin",
   ":arrow-reflect-gradle-plugin",
+  ":arrow-reflection-quotes",
 )
 
 // Docs
