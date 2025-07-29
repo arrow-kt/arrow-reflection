@@ -1,6 +1,5 @@
 package arrow.meta.module.impl.arrow.meta.quote
 
-import arrow.meta.module.impl.arrow.meta.quotes.QuasiquoteTransformer
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 
@@ -13,8 +12,8 @@ value class Declr private constructor(private val code: String)  {
     }
   }
 
-  fun <T : FirDeclaration> fir(session: FirSession): FirDeclrQuote<T> {
-    val fir = QuasiquoteTransformer.declaration<T>(code = code, session = session)
+  inline fun <reified T : FirDeclaration> fir(session: FirSession): FirDeclrQuote<T> {
+    val fir = QuasiquoteTransformer.declaration<T>(session = session, code = show())
     return if (fir == null) {
       DeclrQuoteError(error = "Not possible to transform code in FIR")
     } else {
