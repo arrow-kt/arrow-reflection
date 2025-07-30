@@ -7,13 +7,12 @@ import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirDeclaration
 import org.jetbrains.kotlin.fir.declarations.FirFile
-import org.jetbrains.kotlin.fir.expressions.FirExpression
+import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.lightTree.LightTree2Fir
 import org.jetbrains.kotlin.fir.scopes.FirKotlinScopeProvider
 import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
 import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 import org.jetbrains.kotlin.readSourceFileWithMapping
-
 
 class QuasiquoteTransformer {
 
@@ -23,15 +22,15 @@ class QuasiquoteTransformer {
 
   companion object {
 
-    inline fun <reified T : FirDeclaration> declaration( session: FirSession, code: String): T? {
+    inline fun <reified T : FirDeclaration> declaration( session: FirSession, code: String, predicate: (T) -> Boolean = { true }): T? {
       return QuasiquoteTransformer().getDeclarations(session, code).firstOrNull {
-        it is T
+        it is T && predicate(it)
       } as? T
     }
 
-    inline fun <reified T : FirExpression> expression(session: FirSession, code: String): T? {
+    inline fun <reified T : FirStatement> expression(session: FirSession, code: String, predicate: (T) -> Boolean = { true }): T? {
       return QuasiquoteTransformer().getExpressions(session, code).firstOrNull {
-        it is T
+        it is T && predicate(it)
       } as? T
     }
   }
@@ -48,8 +47,8 @@ class QuasiquoteTransformer {
     return declarations
   }
 
-  fun getExpressions(session: FirSession, code: String): List<FirExpression> {
-    val expressions: MutableList<FirExpression> = mutableListOf()
+  fun getExpressions(session: FirSession, code: String): List<FirStatement> {
+    val expressions: MutableList<FirStatement> = mutableListOf()
     val expressionCode: () -> String = {
       //language=kotlin
       """
@@ -58,10 +57,11 @@ class QuasiquoteTransformer {
         }
       """.trimIndent()
     }
+
     val file = session.buildFirFile(file = file(expressionCode()), scopeProvider = session.kotlinScopeProvider)
     file.accept(object : FirVisitorVoid() {
       override fun visitElement(element: FirElement) {
-        if (element is FirExpression) expressions.add(element)
+        if (element is FirStatement) expressions.add(element)
         element.acceptChildren(this)
       }
     })

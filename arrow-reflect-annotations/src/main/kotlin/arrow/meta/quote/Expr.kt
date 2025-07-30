@@ -1,30 +1,32 @@
 package arrow.meta.module.impl.arrow.meta.quote
 
+import arrow.meta.module.impl.arrow.meta.quote.typeInference.QuasiquoteFirExpressionTypeInference
 import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.expressions.FirExpression
+import org.jetbrains.kotlin.fir.expressions.FirStatement
+import org.jetbrains.kotlin.lexer.KotlinLexer
 
 @JvmInline
 value class Expr private constructor(private val code: String)  {
 
   companion object {
-    fun quote(scope: () -> String): Expr {
+    operator fun invoke(scope: () -> String): Expr {
       return Expr(code = scope())
     }
   }
 
-  //inline fun <reified T : FirExpression> fir(session: FirSession): FirExprQuote<T> {
-    //val fir = QuasiquoteTransformer.expression<T>(session = session, code = show())
-    //return if (fir == null) {
-      //ExprQuoteError(error = "Not possible to transform code in FIR")
-    //} else {
-      //EvaluatedFirExpr(fir = fir)
-    //}
-  //}
-
-  fun fir(session: FirSession): FirExprQuote<FirExpression> {
-    val fir = QuasiquoteFirTypeInference.expression(session = session, code = show())
+  inline fun <reified T : FirStatement> findFir(session: FirSession, predicate: (T) -> Boolean = { true }): FirExprQuote<T> {
+    val fir = QuasiquoteTransformer.expression<T>(session = session, code = show(), predicate = predicate)
     return if (fir == null) {
-      ExprQuoteError(error = "Not possible to transform code in FIR inferring type")
+      ExprQuoteError(error = "Not possible to transform code in Fir")
+    } else {
+      EvaluatedFirExpr(fir = fir)
+    }
+  }
+
+  fun fir(session: FirSession): FirExprQuote<FirStatement> {
+    val fir = QuasiquoteFirExpressionTypeInference(lexer = KotlinLexer()).expression(session = session, code = show())
+    return if (fir == null) {
+      ExprQuoteError(error = "Not possible to transform code in Fir inferring type")
     } else {
       EvaluatedFirExpr(fir = fir)
     }
@@ -37,10 +39,10 @@ value class Expr private constructor(private val code: String)  {
   }
 }
 
-sealed interface FirExprQuote<out T : FirExpression>
+sealed interface FirExprQuote<out T : FirStatement>
 
 @JvmInline
-value class EvaluatedFirExpr<T : FirExpression>(private val fir: T) : FirExprQuote<T>
+value class EvaluatedFirExpr<T : FirStatement>(val fir: T) : FirExprQuote<T>
 
 @JvmInline
 value class ExprQuoteError(val error: String) : FirExprQuote<Nothing>
