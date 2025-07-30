@@ -115,6 +115,15 @@ class QuoteExpressionTest {
   }
 
   @Test
+  fun testForLoopStatement() {
+    assertTrue {
+      val expr = Expr { "for (i in 1..10) { println(i) }" }
+      val fir = expr.fir(session = session())
+      fir.unbox() is FirWhileLoop
+    }
+  }
+
+  @Test
   fun testDoWhileLoopStatement() {
     assertTrue {
       val expr = Expr { "do { println() } while (true)" }
