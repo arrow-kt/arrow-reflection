@@ -19,7 +19,7 @@ class QuasiquoteIterator(private val file: FirFile) : Iterator<FirElement> {
   override fun hasNext(): Boolean = deque.isNotEmpty()
 
   override fun next(): FirElement {
-    val current = deque.removeLast()
+    val current = deque.removeFirst()
     current.acceptChildren(object : FirVisitorVoid() {
       override fun visitElement(element: FirElement) {
         if (element !in visited) {
