@@ -47,4 +47,16 @@ sourceSets {
 dependencies {
   compileOnly(libs.kotlin.compiler)
   kotlinCompilerPluginClasspath(libs.kotlin.compiler)
+
+  testCompileOnly(libs.kotlin.compiler)
+  testImplementation(libs.kotlin.compiler)
+  testImplementation(libs.kotlin.stdlib)
+  testImplementation(libs.kotlin.test)
+  testImplementation("junit:junit:4.13.2")
+  testImplementation(platform("org.junit:junit-bom:5.13.4"))
+  testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+tasks.test {
+  useJUnitPlatform()
 }
