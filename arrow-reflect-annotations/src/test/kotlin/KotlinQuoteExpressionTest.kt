@@ -1,6 +1,4 @@
-import arrow.meta.module.impl.arrow.meta.quote.EvaluatedFirExpr
-import arrow.meta.module.impl.arrow.meta.quote.Expr
-import arrow.meta.module.impl.arrow.meta.quote.FirExprQuote
+import arrow.meta.module.impl.arrow.meta.quote.Kotlin
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiFileFactory
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
@@ -14,7 +12,6 @@ import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.expressions.impl.FirElseIfTrueCondition
 import org.jetbrains.kotlin.fir.java.FirCliSession
 import org.jetbrains.kotlin.fir.java.FirProjectSessionProvider
-import org.jetbrains.kotlin.fir.resolve.dfa.cfg.booleanLiteralValue
 import org.jetbrains.kotlin.fir.scopes.FirKotlinScopeProvider
 import org.jetbrains.kotlin.fir.session.registerModuleData
 import org.jetbrains.kotlin.name.Name
@@ -23,30 +20,28 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
 
 @OptIn(PrivateSessionConstructor::class, SessionConfiguration::class)
-class QuoteExpressionTest {
+class KotlinQuoteExpressionTest {
 
   @Test
   fun testReturnExpression() {
     assertTrue {
-      val expr = Expr { "return 2 + 2" }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirReturnExpression
+      val kotlin = Kotlin(session()) { "return 2 + 2" }
+      kotlin.filterIsInstance<FirReturnExpression>().isNotEmpty()
     }
   }
 
   @Test
   fun testIfElseExpression() {
     assertTrue {
-      val expr = Expr { "if(true) { 2 } else { 3 }" }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirElseIfTrueCondition
+      val kotlin = Kotlin(session()) { "if(true) { 2 } else { 3 }" }
+      kotlin.filterIsInstance<FirElseIfTrueCondition>().isNotEmpty()
     }
   }
 
   @Test
   fun testWhenExpression() {
     assertTrue {
-      val expr = Expr {
+      val kotlin = Kotlin(session()) {
         """
           when {
             2 + 2 == 4 -> true
@@ -54,42 +49,38 @@ class QuoteExpressionTest {
           }
         """.trimIndent()
       }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirWhenExpression
+      kotlin.filterIsInstance<FirWhenExpression>().isNotEmpty()
     }
   }
 
   @Test
   fun testThrowExpression() {
     assertTrue {
-      val expr = Expr { "throw Exception()" }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirThrowExpression
+      val kotlin = Kotlin(session()) { "throw Exception()" }
+      kotlin.filterIsInstance<FirThrowExpression>().isNotEmpty()
     }
   }
 
   @Test
   fun testBreakExpression() {
     assertTrue {
-      val expr = Expr { "break" }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirBreakExpression
+      val kotlin = Kotlin(session()) { "break" }
+      kotlin.filterIsInstance<FirBreakExpression>().isNotEmpty()
     }
   }
 
   @Test
   fun testContinueExpression() {
     assertTrue {
-      val expr = Expr { "continue" }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirContinueExpression
+      val kotlin = Kotlin(session()) { "continue" }
+      kotlin.filterIsInstance<FirContinueExpression>().isNotEmpty()
     }
   }
 
   @Test
   fun testTryExpression() {
     assertTrue {
-      val expr = Expr {
+      val kotlin = Kotlin(session()) {
         """
           try {
             2 + 2
@@ -100,70 +91,46 @@ class QuoteExpressionTest {
           }
         """.trimIndent()
       }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirTryExpression
+      kotlin.filterIsInstance<FirTryExpression>().isNotEmpty()
     }
   }
 
   @Test
   fun testWhileLoopStatement() {
     assertTrue {
-      val expr = Expr { "while (true) { println() }" }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirWhileLoop
+      val kotlin = Kotlin(session()) { "while (true) { println() }" }
+      kotlin.filterIsInstance<FirWhileLoop>().isNotEmpty()
     }
   }
 
   @Test
   fun testForLoopStatement() {
     assertTrue {
-      val expr = Expr { "for (i in 1..10) { println(i) }" }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirWhileLoop
+      val kotlin = Kotlin(session()) { "for (i in 1..10) { println(i) }" }
+      kotlin.filterIsInstance<FirWhileLoop>().isNotEmpty()
     }
   }
 
   @Test
   fun testDoWhileLoopStatement() {
     assertTrue {
-      val expr = Expr { "do { println() } while (true)" }
-      val fir = expr.fir(session = session())
-      fir.unbox() is FirDoWhileLoop
+      val kotlin = Kotlin(session()) { "do { println() } while (true)" }
+      kotlin.filterIsInstance<FirDoWhileLoop>().isNotEmpty()
     }
   }
 
   @Test
-  fun testReturnExplicitExpression() {
+  fun testMultipleWhileLoopStatementPredicate() {
     assertTrue {
-      val expr = Expr {
-        """
-          do { println() } while (true)
-          return 2 + 2
-        """.trimIndent()
-      }
-      val fir = expr.findFir<FirReturnExpression>(session = session())
-      fir.unbox() is FirReturnExpression
-    }
-  }
-
-  @Test
-  fun testWhileLoopExplicitStatementWithPredicate() {
-    assertTrue {
-      val expr = Expr {
+      val kotlin = Kotlin(session()) {
         """
           while (true) { println() }
           while (false) { println() }
         """.trimIndent()
       }
-      val fir = expr.findFir<FirWhileLoop>(session = session()) { expression ->
-        expression.condition.booleanLiteralValue == false
-      }
-      val unboxedFir = fir.unbox()
-      unboxedFir is FirWhileLoop && unboxedFir.condition.booleanLiteralValue == false
+      kotlin.filterIsInstance<FirWhileLoop>().size == 2
     }
   }
-
-  inline fun <reified T : FirStatement> FirExprQuote<T>.unbox(): T? = (this as? EvaluatedFirExpr<T>)?.fir
 
   private fun session(): FirSession {
     val applicationEnvironment = KotlinCoreEnvironment.createForProduction(

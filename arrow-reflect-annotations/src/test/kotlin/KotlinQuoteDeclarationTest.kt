@@ -1,6 +1,4 @@
-import arrow.meta.module.impl.arrow.meta.quote.Declr
-import arrow.meta.module.impl.arrow.meta.quote.EvaluatedFirDeclr
-import arrow.meta.module.impl.arrow.meta.quote.FirDeclrQuote
+import arrow.meta.module.impl.arrow.meta.quote.Kotlin
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiFileFactory
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
@@ -11,132 +9,133 @@ import org.jetbrains.kotlin.fir.FirSourceModuleData
 import org.jetbrains.kotlin.fir.PrivateSessionConstructor
 import org.jetbrains.kotlin.fir.SessionConfiguration
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.declarations.utils.nameOrSpecialName
 import org.jetbrains.kotlin.fir.java.FirCliSession
 import org.jetbrains.kotlin.fir.java.FirProjectSessionProvider
 import org.jetbrains.kotlin.fir.scopes.FirKotlinScopeProvider
 import org.jetbrains.kotlin.fir.session.registerModuleData
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
+import org.jetbrains.kotlin.text
 import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
 
 @OptIn(PrivateSessionConstructor::class, SessionConfiguration::class)
-class QuoteDeclarationTest {
+class KotlinQuoteDeclarationTest {
 
   @Test
   fun testClassDeclaration() {
     assertTrue {
-      val declr = Declr { "class Test {}" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirClass
+      val code = "class Test {}"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirClass>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testObjectDeclaration() {
     assertTrue {
-      val declr = Declr { "object Test {}" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirClass
+      val code = "object Test {}"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirClass>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testInterfaceDeclaration() {
     assertTrue {
-      val declr = Declr { "interface Test {}" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirClass
+      val code = "interface Test {}"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirClass>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testCompanionObjectDeclaration() {
     assertTrue {
-      val declr = Declr { "companion object { fun x() {} }" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirClass
+      val code = "companion object { fun x() {} }"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirClass>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testSealedClassDeclaration() {
     assertTrue {
-      val declr = Declr { "sealed class Test {}" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirClass
+      val code = "sealed class Test {}"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirClass>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testEnumDeclaration() {
     assertTrue {
-      val declr = Declr { "enum class Test { TEST, TEST2 }" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirClass
+      val code = "enum class Test { TEST, TEST2 }"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirClass>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testFunctionDeclaration() {
     assertTrue {
-      val declr = Declr { "fun test() {}" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirFunction
+      val code = "fun test() {}"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirFunction>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testValueDeclaration() {
     assertTrue {
-      val declr = Declr { "val test = 2" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirProperty
+      val code = "val test = 2"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirProperty>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testVariableDeclaration() {
     assertTrue {
-      val declr = Declr { "var test = 2" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirProperty
+      val code = "var test = 2"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirProperty>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testTypeAliasDeclaration() {
     assertTrue {
-      val declr = Declr { "typealias Test = String" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirTypeAlias
+      val code = "typealias Test = String"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirTypeAlias>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
   fun testAnnotationClassDeclaration() {
     assertTrue {
-      val declr = Declr { "annotation class Test(val x: String)" }
-      val fir = declr.fir(session = session())
-      fir.unbox() is FirClass
+      val code = "annotation class Test(val x: String)"
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirClass>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
-  fun testClassExplicitDeclaration() {
+  fun testFileDeclaration() {
     assertTrue {
-      val declr = Declr { "class Test {}" }
-      val fir = declr.findFir<FirClass>(session = session())
-      fir.unbox() is FirClass
-    }
-  }
-
-  @Test
-  fun testFileExplicitDeclaration() {
-    assertTrue {
-      val declr = Declr {
-        """
+      val code = """
           package example.sample
 
           import kotlin.annotation.AnnotationTarget.*
@@ -144,17 +143,18 @@ class QuoteDeclarationTest {
           @Target(CLASS, PROPERTY, CONSTRUCTOR, FUNCTION)
           @Retention(AnnotationRetention.SOURCE)
           annotation class Test
-        """.trimIndent()
-      }
-      val fir = declr.findFir<FirFile>(session = session())
-      fir.unbox() is FirFile
+      """.trimIndent()
+      val kotlin = Kotlin(session()) { code }
+      val klass = kotlin.filterIsInstance<FirFile>()
+      klass.size == 1 && klass.first().source.text == code
     }
   }
 
   @Test
-  fun testClassExplicitDeclarationInsideFile() {
+  fun testClassDeclarationInsideFile() {
     assertTrue {
-      val declr = Declr {
+      val testClass = "annotation class Test"
+      val code: () -> String = {
         """
           package example.sample
 
@@ -162,35 +162,32 @@ class QuoteDeclarationTest {
 
           @Target(CLASS, PROPERTY, CONSTRUCTOR, FUNCTION)
           @Retention(AnnotationRetention.SOURCE)
-          annotation class Test
+          $testClass
         """.trimIndent()
       }
-      val fir = declr.findFir<FirClass>(session = session())
-      val unboxedFir = fir.unbox()
-      unboxedFir is FirClass && unboxedFir.nameOrSpecialName.asString() == "Test"
+      val kotlin = Kotlin(session()) { code() }
+      val klass = kotlin.filterIsInstance<FirClass>()
+      klass.size == 1 && klass.first().source.text?.contains(testClass) == true
     }
   }
 
   @Test
   fun testClassExplicitDeclarationInsideFileWithPredicate() {
     assertTrue {
-      val declr = Declr {
+      val fooClass = "class Foo"
+      val barClass = "class Bar"
+      val code: () -> String = {
         """
-          package example.sample
-
-          class Foo
-          class Bar
-        """.trimIndent()
+        package foo.bar
+        
+        $fooClass
+        $barClass
+      """.trimIndent()
       }
-      val fir = declr.findFir<FirClass>(session = session()) { firClass ->
-        firClass.nameOrSpecialName.asString() == "Bar"
-      }
-      val unboxedFir = fir.unbox()
-      unboxedFir is FirClass && unboxedFir.nameOrSpecialName.asString() == "Bar"
+      val kotlin = Kotlin(session()) { code() }
+      kotlin.find { it.source.text == fooClass } != null && kotlin.find { it.source.text == barClass } != null
     }
   }
-
-  inline fun <reified T : FirDeclaration> FirDeclrQuote<T>.unbox(): T? = (this as? EvaluatedFirDeclr<T>)?.fir
 
   private fun session(): FirSession {
     val applicationEnvironment = KotlinCoreEnvironment.createForProduction(
