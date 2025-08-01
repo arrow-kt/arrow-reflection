@@ -3,13 +3,12 @@ package arrow.reflect.compiler.plugin.fir.checkers
 import arrow.meta.FirMetaCheckerContext
 import arrow.meta.Meta
 import arrow.meta.TemplateCompiler
-import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsCompilation
 import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsContext
-import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroCompilation
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroContext
 import arrow.reflect.compiler.plugin.fir.transformers.FirMetaTransformer
 import arrow.reflect.compiler.plugin.targets.MetaInvoke
 import arrow.reflect.compiler.plugin.targets.MetaTarget
+import arrow.reflect.compiler.plugin.targets.macro.MacroCompiler
 import arrow.reflect.compiler.plugin.targets.macro.MacroInvoke
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.FirAnnotationContainer
@@ -84,22 +83,17 @@ class FirMetaAdditionalCheckersExtension(
       checkerContext = context
     )
     val annotations = (element as? FirAnnotationContainer)?.annotations ?: listOf()
-    macro(
+    val compilations = macro(
       session = session,
       context = object : MacroContext {},
       element = element,
       annotations = annotations
-    ).compile(diagnosticsContext = diagnosticsContext)
-  }
-
-  private fun List<MacroCompilation>.compile(
-    diagnosticsContext: DiagnosticsContext
-  ) {
-    forEach { compilation ->
-      when(compilation) {
-        is DiagnosticsCompilation -> compilation.runCompilation(context = diagnosticsContext)
-      }
-    }
+    )
+    MacroCompiler.compile(
+      element = element,
+      compilations = compilations,
+      diagnostics = diagnosticsContext
+    )
   }
 
   private inline fun <reified E : FirElement> invokeChecker(

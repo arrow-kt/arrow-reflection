@@ -6,8 +6,7 @@ import org.jetbrains.kotlin.fir.FirElement
 import kotlin.reflect.full.isSubclassOf
 
 data class MacroRegistry(
-  val firMacroRegistry: FirMacroRegistry,
-  val irMacroRegistry: List<MacroTarget> = listOf()
+  val firMacroRegistry: FirMacroRegistry
 )
 
 @ConsistentCopyVisibility

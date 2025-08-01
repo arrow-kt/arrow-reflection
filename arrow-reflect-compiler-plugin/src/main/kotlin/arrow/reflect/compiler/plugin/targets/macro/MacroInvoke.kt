@@ -16,7 +16,7 @@ class MacroInvoke private constructor(private val registry: MacroRegistry) {
     }
 
     private fun buildRegistry(macros: List<MacroTarget>): MacroRegistry {
-      return MacroRegistry(firMacroRegistry = FirMacroRegistry.buildRegistry(macros), irMacroRegistry = listOf())
+      return MacroRegistry(firMacroRegistry = FirMacroRegistry.buildRegistry(macros))
     }
   }
 
