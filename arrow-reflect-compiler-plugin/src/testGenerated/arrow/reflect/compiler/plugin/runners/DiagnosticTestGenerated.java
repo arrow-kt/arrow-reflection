@@ -27,6 +27,12 @@ public class DiagnosticTestGenerated extends AbstractDiagnosticTest {
   }
 
   @Test
+  @TestMetadata("increment_test.kt")
+  public void testIncrement_test() {
+    runTest("src/testData/diagnostics/increment_test.kt");
+  }
+
+  @Test
   @TestMetadata("log_test.kt")
   public void testLog_test() {
     runTest("src/testData/diagnostics/log_test.kt");

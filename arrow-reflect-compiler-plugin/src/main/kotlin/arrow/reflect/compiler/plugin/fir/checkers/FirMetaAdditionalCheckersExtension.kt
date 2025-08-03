@@ -89,8 +89,7 @@ class FirMetaAdditionalCheckersExtension(
       element = element,
       annotations = annotations
     )
-    MacroCompiler.compile(
-      element = element,
+    MacroCompiler.compileDiagnostics(
       compilations = compilations,
       diagnostics = diagnosticsContext
     )

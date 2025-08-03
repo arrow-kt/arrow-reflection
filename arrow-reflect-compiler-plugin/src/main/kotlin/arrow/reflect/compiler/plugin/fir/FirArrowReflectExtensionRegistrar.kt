@@ -2,6 +2,7 @@ package arrow.reflect.compiler.plugin.fir
 
 import arrow.meta.TemplateCompiler
 import arrow.reflect.compiler.plugin.fir.checkers.FirMetaAdditionalCheckersExtension
+import arrow.reflect.compiler.plugin.fir.checkers.MacroFirTransformationCheckerExtension
 import arrow.reflect.compiler.plugin.fir.codegen.FirMetaCodegenExtension
 import arrow.reflect.compiler.plugin.targets.MetaTarget
 import arrow.reflect.compiler.plugin.targets.macro.MacroInvoke
@@ -23,6 +24,9 @@ class FirArrowReflectExtensionRegistrar(
     +{ session: FirSession ->
       templateCompiler.session = session
       FirMetaAdditionalCheckersExtension(session, templateCompiler, metaTargets, macro)
+    }
+    +{ session: FirSession ->
+      MacroFirTransformationCheckerExtension(session = session, macro = macro)
     }
   }
 

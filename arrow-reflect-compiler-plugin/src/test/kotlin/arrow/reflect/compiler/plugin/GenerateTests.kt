@@ -2,6 +2,7 @@ package arrow.reflect.compiler.plugin
 
 import arrow.reflect.compiler.plugin.runners.AbstractBoxTest
 import arrow.reflect.compiler.plugin.runners.AbstractDiagnosticTest
+import arrow.reflect.compiler.plugin.runners.AbstractTransformationTest
 import org.jetbrains.kotlin.generators.generateTestGroupSuiteWithJUnit5
 
 fun main() {
@@ -13,6 +14,10 @@ fun main() {
 
       testClass<AbstractBoxTest> {
         model("box")
+      }
+
+      testClass<AbstractTransformationTest> {
+        model("transformation")
       }
     }
   }

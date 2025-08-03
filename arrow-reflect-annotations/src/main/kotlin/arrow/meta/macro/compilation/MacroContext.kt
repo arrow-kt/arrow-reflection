@@ -12,9 +12,9 @@ interface MacroContext {
     }
   }
 
-  fun <T : FirElement> transform(scope: DiagnosticsContext.() -> T): TransformCompilation<T> {
+  fun <T : FirElement> transform(scope: TransformContext.() -> T): TransformCompilation<T> {
     return object : TransformCompilation<T> {
-      override fun transform(context: DiagnosticsContext): T {
+      override fun transform(context: TransformContext): T {
         return context.scope()
       }
     }

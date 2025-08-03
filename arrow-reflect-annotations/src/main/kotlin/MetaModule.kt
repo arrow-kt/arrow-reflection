@@ -6,7 +6,6 @@ import arrow.meta.samples.Increment
 import arrow.meta.samples.Product
 
 interface MetaModule: Module {
-  val increment: Increment.Companion
   val product: Product.Companion
   val decorator: Decorator.Companion
 }

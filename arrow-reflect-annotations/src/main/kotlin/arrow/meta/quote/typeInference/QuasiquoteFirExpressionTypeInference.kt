@@ -17,7 +17,10 @@ class QuasiquoteFirExpressionTypeInference(private val lexer: KotlinLexer) {
       KtTokens.TRY_KEYWORD,
       KtTokens.FOR_KEYWORD,
       KtTokens.WHILE_KEYWORD,
-      KtTokens.DO_KEYWORD -> true
+      KtTokens.DO_KEYWORD,
+      KtTokens.INTEGER_LITERAL,
+      KtTokens.FLOAT_LITERAL,
+      KtTokens.CHARACTER_LITERAL -> true
       else -> false
     }
   }

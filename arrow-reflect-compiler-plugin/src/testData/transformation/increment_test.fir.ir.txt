@@ -1,0 +1,19 @@
+FILE fqName:foo.bar fileName:/module_main_increment_test.kt
+  FUN name:box visibility:public modality:FINAL returnType:kotlin.String
+    BLOCK_BODY
+      VAR name:x type:kotlin.Int [val]
+        CALL 'public final fun plus (other: kotlin.Int): kotlin.Int declared in kotlin.Int' type=kotlin.Int origin=PLUS
+          ARG <this>: CONST Int type=kotlin.Int value=0
+          ARG other: CONST Int type=kotlin.Int value=1
+      RETURN type=kotlin.Nothing from='public final fun box (): kotlin.String declared in foo.bar'
+        WHEN type=kotlin.String origin=IF
+          BRANCH
+            if: CALL 'public final fun EQEQ (arg0: kotlin.Any?, arg1: kotlin.Any?): kotlin.Boolean declared in kotlin.internal.ir' type=kotlin.Boolean origin=EQEQ
+              ARG arg0: GET_VAR 'val x: kotlin.Int declared in foo.bar.box' type=kotlin.Int origin=null
+              ARG arg1: CONST Int type=kotlin.Int value=1
+            then: BLOCK type=kotlin.String origin=null
+              CONST String type=kotlin.String value="OK"
+          BRANCH
+            if: CONST Boolean type=kotlin.Boolean value=true
+            then: BLOCK type=kotlin.String origin=null
+              CONST String type=kotlin.String value="Fail"

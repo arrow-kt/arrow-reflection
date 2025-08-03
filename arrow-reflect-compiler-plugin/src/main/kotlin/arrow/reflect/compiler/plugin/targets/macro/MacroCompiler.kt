@@ -3,37 +3,34 @@ package arrow.reflect.compiler.plugin.targets.macro
 import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsCompilation
 import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsContext
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroCompilation
-import arrow.meta.module.impl.arrow.meta.macro.compilation.TransformCompilation
 import arrow.reflect.compiler.plugin.fir.transformers.FirMacroTransformer
-import org.jetbrains.kotlin.fir.FirElement
+import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
+import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
+import org.jetbrains.kotlin.fir.declarations.FirFile
 
 object MacroCompiler {
 
-  fun <E : FirElement> compile(element: E, compilations: List<MacroCompilation>, diagnostics: DiagnosticsContext) {
-    val diagnosticsCompilation = mutableListOf<DiagnosticsCompilation>()
-    val transformCompilation = mutableListOf<TransformCompilation<*>>()
+  fun compileDiagnostics(compilations: List<MacroCompilation>, diagnostics: DiagnosticsContext) {
     compilations.forEach { compilation ->
-      when(compilation) {
-        is DiagnosticsCompilation -> diagnosticsCompilation.add(compilation)
-        is TransformCompilation<*> -> transformCompilation.add(compilation)
+      if (compilation is DiagnosticsCompilation) {
+        compilation.runCompilation(context = diagnostics)
       }
     }
-    diagnosticsCompilation.compile(diagnostics = diagnostics)
-    transformCompilation.compile(element = element, diagnostics = diagnostics)
   }
 
-  private fun List<DiagnosticsCompilation>.compile(diagnostics: DiagnosticsContext) {
-    forEach { compilation ->
-      compilation.runCompilation(context = diagnostics)
-    }
-  }
-
-  private fun <E : FirElement> List<TransformCompilation<*>>.compile(element: E, diagnostics: DiagnosticsContext) {
-    forEach { compilation ->
-      FirMacroTransformer(
-        compilation = compilation,
-        diagnostics = diagnostics
-      ).transformElement(element, element)
-    }
+  fun compileTransformCompilation(
+    session: FirSession,
+    file: FirFile,
+    macro: MacroInvoke,
+    checkerContext: CheckerContext,
+    diagnosticsReporter: DiagnosticReporter
+  ) {
+    FirMacroTransformer(
+      session = session,
+      macro = macro,
+      diagnosticReporter = diagnosticsReporter,
+      checkerContext = checkerContext
+    ).transformFile(file, file)
   }
 }
