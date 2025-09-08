@@ -1,12 +1,15 @@
 // WITH_STDLIB
 // MODULE: main
-package foo.bar
+package test
 
-import arrow.meta.samples.Increment
+import arrow.meta.samples.Product
+
+@Product
+data class Sample(val foo: Int, val bar: String)
 
 fun box(): String {
-  val x = @Increment 0
-  return if (x == 1) {
+  val x = Sample(foo = 0, bar = "abc").product()
+  return if (x == listOf("foo" to 0, "bar" to "abc")) {
     "OK"
   } else {
     "Fail"
