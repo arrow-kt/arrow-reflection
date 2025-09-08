@@ -393,19 +393,17 @@ class FirBodyResolveTransformerAdapter(
       when (analysisContext) {
         is FirRegularClass -> {
           ctx.addReceiver(null, ImplicitDispatchReceiverValue(analysisContext.symbol, session, scopeSession))
-          //ctx.addInaccessibleImplicitReceiverValue(analysisContext, SessionHolderImpl(session, scopeSession))
         }
 
         is FirFile -> {
           val filePackageScope = FirPackageMemberScope(analysisContext.packageFqName, session)
           ctx.addNonLocalTowerDataElement(filePackageScope.asTowerDataElement(false))
-          //ctx.addLocalScope(FirLocalScope(session))
         }
 
         else -> {
           val localScope = FirLocalScope(session)
           ctx.addLocalScope(localScope)
-        } //error("unsupported declaration: $analysisContext")
+        }
       }
     }
   }

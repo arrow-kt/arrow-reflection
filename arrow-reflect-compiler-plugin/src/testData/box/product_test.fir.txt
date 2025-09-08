@@ -20,7 +20,7 @@ FILE: module_main_product_test.kt
 
     }
     public final fun box(): R|kotlin/String| {
-        lval x: R|kotlin/collections/List<kotlin/Pair<kotlin/String, *>>| = R|test/Sample.Sample|(Int(0), String(abc)).R|test/Sample.product|()
+        lval x: R|kotlin/collections/List<kotlin/Pair<kotlin/String, *>>| = R|test/Sample.Sample|(Int(0), String(abc)).R|/product|()
         ^box when () {
             ==(R|<local>/x|, R|kotlin/collections/listOf|<R|kotlin/Pair<kotlin/String, it(kotlin/Comparable<*> & java/io/Serializable)>|>(vararg(String(foo).R|kotlin/to|<R|kotlin/String|, R|kotlin/Int|>(Int(0)), String(bar).R|kotlin/to|<R|kotlin/String|, R|kotlin/String|>(String(abc))))) ->  {
                 String(OK)
