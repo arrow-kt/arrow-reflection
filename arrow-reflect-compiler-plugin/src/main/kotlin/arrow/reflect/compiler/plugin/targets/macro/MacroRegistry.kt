@@ -2,12 +2,41 @@ package arrow.reflect.compiler.plugin.targets.macro
 
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroCompilation
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroContext
+import arrow.meta.module.impl.arrow.meta.macro.compilation.TransformClassState
+import arrow.reflect.compiler.plugin.ir.generation.ArrowReflectFir2IrVisitor
+import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.fir.FirElement
 import kotlin.reflect.full.isSubclassOf
 
 data class MacroRegistry(
-  val firMacroRegistry: FirMacroRegistry
+  val firMacroRegistry: FirMacroRegistry,
+  val classTransformationRegistry: ClassTransformationRegistry,
+  var irActualizedResult: ArrowReflectFir2IrVisitor?
 )
+
+@ConsistentCopyVisibility
+data class ClassTransformationRegistry private constructor(
+  private val transformation: MutableMap<GeneratedDeclarationKey, TransformClassState>
+) {
+
+  companion object {
+    fun empty(): ClassTransformationRegistry = ClassTransformationRegistry(
+      transformation = mutableMapOf()
+    )
+  }
+
+  fun register(key: GeneratedDeclarationKey, classTransformation: TransformClassState) {
+    transformation[key] = classTransformation
+  }
+
+  operator fun set(key: GeneratedDeclarationKey, classTransformation: TransformClassState) {
+    transformation[key] = classTransformation
+  }
+
+  operator fun get(key: GeneratedDeclarationKey): TransformClassState? {
+    return transformation[key]
+  }
+}
 
 @ConsistentCopyVisibility
 data class FirMacroRegistry private constructor(

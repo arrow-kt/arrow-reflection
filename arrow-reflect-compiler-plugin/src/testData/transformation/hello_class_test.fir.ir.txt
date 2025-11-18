@@ -1,0 +1,44 @@
+FILE fqName:foo.bar fileName:/module_main_hello_class_test.kt
+  CLASS CLASS name:Hello modality:FINAL visibility:public superTypes:[kotlin.Any]
+    annotations:
+      HelloClassTransform
+    thisReceiver: VALUE_PARAMETER INSTANCE_RECEIVER kind:DispatchReceiver name:<this> type:foo.bar.Hello
+    CONSTRUCTOR visibility:public returnType:foo.bar.Hello [primary]
+      BLOCK_BODY
+        DELEGATING_CONSTRUCTOR_CALL 'public constructor <init> () declared in kotlin.Any'
+        INSTANCE_INITIALIZER_CALL classDescriptor='CLASS CLASS name:Hello modality:FINAL visibility:public superTypes:[kotlin.Any]' type=kotlin.Unit
+    FUN FAKE_OVERRIDE name:equals visibility:public modality:OPEN returnType:kotlin.Boolean [fake_override,operator]
+      VALUE_PARAMETER kind:DispatchReceiver name:<this> index:0 type:kotlin.Any
+      VALUE_PARAMETER kind:Regular name:other index:1 type:kotlin.Any?
+      overridden:
+        public open fun equals (other: kotlin.Any?): kotlin.Boolean declared in kotlin.Any
+    FUN FAKE_OVERRIDE name:hashCode visibility:public modality:OPEN returnType:kotlin.Int [fake_override]
+      VALUE_PARAMETER kind:DispatchReceiver name:<this> index:0 type:kotlin.Any
+      overridden:
+        public open fun hashCode (): kotlin.Int declared in kotlin.Any
+    FUN FAKE_OVERRIDE name:toString visibility:public modality:OPEN returnType:kotlin.String [fake_override]
+      VALUE_PARAMETER kind:DispatchReceiver name:<this> index:0 type:kotlin.Any
+      overridden:
+        public open fun toString (): kotlin.String declared in kotlin.Any
+    FUN GENERATED[arrow.reflect.compiler.plugin.fir.codegen.FirMacroCodegenExtension.MacroGeneratedFunctionKey] name:hello visibility:public modality:FINAL returnType:kotlin.String
+      VALUE_PARAMETER kind:DispatchReceiver name:<this> index:0 type:foo.bar.Hello
+      BLOCK_BODY
+        RETURN type=kotlin.Nothing from='public final fun hello (): kotlin.String declared in foo.bar.Hello'
+          CONST String type=kotlin.String value="Hello!"
+  FUN name:box visibility:public modality:FINAL returnType:kotlin.String
+    BLOCK_BODY
+      VAR name:x type:kotlin.String [val]
+        CALL 'public final fun hello (): kotlin.String declared in foo.bar.Hello' type=kotlin.String origin=null
+          ARG <this>: CONSTRUCTOR_CALL 'public constructor <init> () declared in foo.bar.Hello' type=foo.bar.Hello origin=null
+      RETURN type=kotlin.Nothing from='public final fun box (): kotlin.String declared in foo.bar'
+        WHEN type=kotlin.String origin=IF
+          BRANCH
+            if: CALL 'public final fun EQEQ (arg0: kotlin.Any?, arg1: kotlin.Any?): kotlin.Boolean declared in kotlin.internal.ir' type=kotlin.Boolean origin=EQEQ
+              ARG arg0: GET_VAR 'val x: kotlin.String declared in foo.bar.box' type=kotlin.String origin=null
+              ARG arg1: CONST String type=kotlin.String value="Hello!"
+            then: BLOCK type=kotlin.String origin=null
+              CONST String type=kotlin.String value="OK"
+          BRANCH
+            if: CONST Boolean type=kotlin.Boolean value=true
+            then: BLOCK type=kotlin.String origin=null
+              CONST String type=kotlin.String value="Fail"

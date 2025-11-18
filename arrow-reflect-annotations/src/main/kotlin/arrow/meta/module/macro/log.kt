@@ -15,21 +15,24 @@ private val META_LOG by diagnosticError()
 @Macro(target = Log::class)
 fun MacroContext.log(declaration: FirDeclaration): MacroCompilation {
   return diagnostics {
-    checkElement(expression = declaration)
+    checkElement(expression = declaration, diagnosticsContext = this)
   }
 }
 
 @Macro(target = Log::class)
 fun MacroContext.log(expression: FirExpression): MacroCompilation {
   return diagnostics {
-    checkElement(expression = expression)
+    checkElement(expression = expression, diagnosticsContext = this)
   }
 }
 
-private fun DiagnosticsContext.checkElement(
-  expression: FirElement
+private fun MacroContext.checkElement(
+  expression: FirElement,
+  diagnosticsContext: DiagnosticsContext
 ) {
-  expression.report(
-    META_LOG, "found error on expression: ${+expression}"
-  )
+  with(diagnosticsContext) {
+    expression.report(
+      META_LOG, "found error on expression: ${+expression}"
+    )
+  }
 }

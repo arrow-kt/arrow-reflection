@@ -37,9 +37,4 @@ open class DiagnosticsContext(
       checkerContext
     )
   }
-
-  operator fun FirElement.unaryPlus(): String =
-    (this as? FirTypeRef)?.coneType?.renderReadableWithFqNames()?.replace("/", ".")
-      ?: source?.text?.toString()
-      ?: error("$this has no source psi text element")
 }

@@ -22,8 +22,20 @@ public class TransformationTestGenerated extends AbstractTransformationTest {
   }
 
   @Test
+  @TestMetadata("hello_class_test.kt")
+  public void testHello_class_test() {
+    runTest("src/testData/transformation/hello_class_test.kt");
+  }
+
+  @Test
   @TestMetadata("increment_test.kt")
   public void testIncrement_test() {
     runTest("src/testData/transformation/increment_test.kt");
+  }
+
+  @Test
+  @TestMetadata("product_test.kt")
+  public void testProduct_test() {
+    runTest("src/testData/transformation/product_test.kt");
   }
 }
