@@ -24,18 +24,29 @@ FILE fqName:foo.bar fileName:/module_main_hello_class_test.kt
       VALUE_PARAMETER kind:DispatchReceiver name:<this> index:0 type:foo.bar.Hello
       BLOCK_BODY
         RETURN type=kotlin.Nothing from='public final fun hello (): kotlin.String declared in foo.bar.Hello'
-          CONST String type=kotlin.String value="Hello!"
+          CONST String type=kotlin.String value="Hello"
+    FUN GENERATED[arrow.reflect.compiler.plugin.fir.codegen.FirMacroCodegenExtension.MacroGeneratedFunctionKey] name:world visibility:public modality:FINAL returnType:kotlin.String
+      VALUE_PARAMETER kind:DispatchReceiver name:<this> index:0 type:foo.bar.Hello
+      BLOCK_BODY
+        RETURN type=kotlin.Nothing from='public final fun world (): kotlin.String declared in foo.bar.Hello'
+          CONST String type=kotlin.String value="World!"
   FUN name:box visibility:public modality:FINAL returnType:kotlin.String
     BLOCK_BODY
+      VAR name:hello type:foo.bar.Hello [val]
+        CONSTRUCTOR_CALL 'public constructor <init> () declared in foo.bar.Hello' type=foo.bar.Hello origin=null
       VAR name:x type:kotlin.String [val]
-        CALL 'public final fun hello (): kotlin.String declared in foo.bar.Hello' type=kotlin.String origin=null
-          ARG <this>: CONSTRUCTOR_CALL 'public constructor <init> () declared in foo.bar.Hello' type=foo.bar.Hello origin=null
+        STRING_CONCATENATION type=kotlin.String
+          CALL 'public final fun hello (): kotlin.String declared in foo.bar.Hello' type=kotlin.String origin=null
+            ARG <this>: GET_VAR 'val hello: foo.bar.Hello declared in foo.bar.box' type=foo.bar.Hello origin=null
+          CONST String type=kotlin.String value=" "
+          CALL 'public final fun world (): kotlin.String declared in foo.bar.Hello' type=kotlin.String origin=null
+            ARG <this>: GET_VAR 'val hello: foo.bar.Hello declared in foo.bar.box' type=foo.bar.Hello origin=null
       RETURN type=kotlin.Nothing from='public final fun box (): kotlin.String declared in foo.bar'
         WHEN type=kotlin.String origin=IF
           BRANCH
             if: CALL 'public final fun EQEQ (arg0: kotlin.Any?, arg1: kotlin.Any?): kotlin.Boolean declared in kotlin.internal.ir' type=kotlin.Boolean origin=EQEQ
               ARG arg0: GET_VAR 'val x: kotlin.String declared in foo.bar.box' type=kotlin.String origin=null
-              ARG arg1: CONST String type=kotlin.String value="Hello!"
+              ARG arg1: CONST String type=kotlin.String value="Hello World!"
             then: BLOCK type=kotlin.String origin=null
               CONST String type=kotlin.String value="OK"
           BRANCH

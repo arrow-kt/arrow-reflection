@@ -8,8 +8,9 @@ import arrow.meta.samples.HelloClassTransform
 class Hello
 
 fun box(): String {
-  val x = Hello().hello()
-  return if (x == "Hello!") {
+  val hello = Hello()
+  val x = "${hello.hello()} ${hello.world()}"
+  return if (x == "Hello World!") {
     "OK"
   } else {
     "Fail"
