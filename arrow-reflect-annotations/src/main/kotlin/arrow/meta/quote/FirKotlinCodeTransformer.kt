@@ -23,6 +23,7 @@ object FirKotlinCodeTransformer {
     session: FirSession,
     code: String,
     isExpression: Boolean,
+    runResolution: Boolean,
     scope: List<FirDeclaration>
   ): FirFile {
     val expressionCode: () -> String = {
@@ -33,6 +34,7 @@ object FirKotlinCodeTransformer {
       """.trimIndent()
     }
     val fir = session.buildFirFile(file = file(if (isExpression) expressionCode() else code), scopeProvider = session.kotlinScopeProvider)
+    if (!runResolution) return fir
     return session.runResolution(fir = fir, scopeSession = ScopeSession(), scopeDeclarations = scope)
   }
 

@@ -25,7 +25,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testReturnExpression() {
     assertTrue {
-      val kotlin = Kotlin(session()) { "return 2 + 2" }
+      val kotlin = Kotlin(session(), runResolution = false) { "return 2 + 2" }
       kotlin.filterIsInstance<FirReturnExpression>().isNotEmpty()
     }
   }
@@ -33,7 +33,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testIfElseExpression() {
     assertTrue {
-      val kotlin = Kotlin(session()) { "if(true) { 2 } else { 3 }" }
+      val kotlin = Kotlin(session(), runResolution = false) { "if(true) { 2 } else { 3 }" }
       kotlin.filterIsInstance<FirElseIfTrueCondition>().isNotEmpty()
     }
   }
@@ -41,7 +41,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testWhenExpression() {
     assertTrue {
-      val kotlin = Kotlin(session()) {
+      val kotlin = Kotlin(session(), runResolution = false) {
         """
           when {
             2 + 2 == 4 -> true
@@ -56,7 +56,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testThrowExpression() {
     assertTrue {
-      val kotlin = Kotlin(session()) { "throw Exception()" }
+      val kotlin = Kotlin(session(), runResolution = false) { "throw Exception()" }
       kotlin.filterIsInstance<FirThrowExpression>().isNotEmpty()
     }
   }
@@ -64,7 +64,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testBreakExpression() {
     assertTrue {
-      val kotlin = Kotlin(session()) { "break" }
+      val kotlin = Kotlin(session(), runResolution = false) { "break" }
       kotlin.filterIsInstance<FirBreakExpression>().isNotEmpty()
     }
   }
@@ -72,7 +72,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testContinueExpression() {
     assertTrue {
-      val kotlin = Kotlin(session()) { "continue" }
+      val kotlin = Kotlin(session(), runResolution = false) { "continue" }
       kotlin.filterIsInstance<FirContinueExpression>().isNotEmpty()
     }
   }
@@ -80,7 +80,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testTryExpression() {
     assertTrue {
-      val kotlin = Kotlin(session()) {
+      val kotlin = Kotlin(session(), runResolution = false) {
         """
           try {
             2 + 2
@@ -98,7 +98,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testWhileLoopStatement() {
     assertTrue {
-      val kotlin = Kotlin(session()) { "while (true) { println() }" }
+      val kotlin = Kotlin(session(), runResolution = false) { "while (true) { println() }" }
       kotlin.filterIsInstance<FirWhileLoop>().isNotEmpty()
     }
   }
@@ -106,7 +106,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testForLoopStatement() {
     assertTrue {
-      val kotlin = Kotlin(session()) { "for (i in 1..10) { println(i) }" }
+      val kotlin = Kotlin(session(), runResolution = false) { "for (i in 1..10) { println(i) }" }
       kotlin.filterIsInstance<FirWhileLoop>().isNotEmpty()
     }
   }
@@ -114,7 +114,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testDoWhileLoopStatement() {
     assertTrue {
-      val kotlin = Kotlin(session()) { "do { println() } while (true)" }
+      val kotlin = Kotlin(session(), runResolution = false) { "do { println() } while (true)" }
       kotlin.filterIsInstance<FirDoWhileLoop>().isNotEmpty()
     }
   }
@@ -122,7 +122,7 @@ class KotlinQuoteExpressionTest {
   @Test
   fun testMultipleWhileLoopStatementPredicate() {
     assertTrue {
-      val kotlin = Kotlin(session()) {
+      val kotlin = Kotlin(session(), runResolution = false) {
         """
           while (true) { println() }
           while (false) { println() }

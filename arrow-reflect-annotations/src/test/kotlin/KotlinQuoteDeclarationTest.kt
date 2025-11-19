@@ -26,7 +26,7 @@ class KotlinQuoteDeclarationTest {
   fun testClassDeclaration() {
     assertTrue {
       val code = "class Test {}"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirClass>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -36,7 +36,7 @@ class KotlinQuoteDeclarationTest {
   fun testObjectDeclaration() {
     assertTrue {
       val code = "object Test {}"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirClass>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -46,7 +46,7 @@ class KotlinQuoteDeclarationTest {
   fun testInterfaceDeclaration() {
     assertTrue {
       val code = "interface Test {}"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirClass>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -56,7 +56,7 @@ class KotlinQuoteDeclarationTest {
   fun testCompanionObjectDeclaration() {
     assertTrue {
       val code = "companion object { fun x() {} }"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirClass>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -66,7 +66,7 @@ class KotlinQuoteDeclarationTest {
   fun testSealedClassDeclaration() {
     assertTrue {
       val code = "sealed class Test {}"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirClass>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -76,7 +76,7 @@ class KotlinQuoteDeclarationTest {
   fun testEnumDeclaration() {
     assertTrue {
       val code = "enum class Test { TEST, TEST2 }"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirClass>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -86,7 +86,7 @@ class KotlinQuoteDeclarationTest {
   fun testFunctionDeclaration() {
     assertTrue {
       val code = "fun test() {}"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirFunction>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -96,7 +96,7 @@ class KotlinQuoteDeclarationTest {
   fun testValueDeclaration() {
     assertTrue {
       val code = "val test = 2"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirProperty>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -106,7 +106,7 @@ class KotlinQuoteDeclarationTest {
   fun testVariableDeclaration() {
     assertTrue {
       val code = "var test = 2"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirProperty>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -116,7 +116,7 @@ class KotlinQuoteDeclarationTest {
   fun testTypeAliasDeclaration() {
     assertTrue {
       val code = "typealias Test = String"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirTypeAlias>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -126,7 +126,7 @@ class KotlinQuoteDeclarationTest {
   fun testAnnotationClassDeclaration() {
     assertTrue {
       val code = "annotation class Test(val x: String)"
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirClass>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -144,7 +144,7 @@ class KotlinQuoteDeclarationTest {
           @Retention(AnnotationRetention.SOURCE)
           annotation class Test
       """.trimIndent()
-      val kotlin = Kotlin(session()) { code }
+      val kotlin = Kotlin(session(), runResolution = false) { code }
       val klass = kotlin.filterIsInstance<FirFile>()
       klass.size == 1 && klass.first().source.text == code
     }
@@ -165,7 +165,7 @@ class KotlinQuoteDeclarationTest {
           $testClass
         """.trimIndent()
       }
-      val kotlin = Kotlin(session()) { code() }
+      val kotlin = Kotlin(session(), runResolution = false) { code() }
       val klass = kotlin.filterIsInstance<FirClass>()
       klass.size == 1 && klass.first().source.text?.contains(testClass) == true
     }
@@ -184,7 +184,7 @@ class KotlinQuoteDeclarationTest {
         $barClass
       """.trimIndent()
       }
-      val kotlin = Kotlin(session()) { code() }
+      val kotlin = Kotlin(session(), runResolution = false) { code() }
       kotlin.find { it.source.text == fooClass } != null && kotlin.find { it.source.text == barClass } != null
     }
   }
