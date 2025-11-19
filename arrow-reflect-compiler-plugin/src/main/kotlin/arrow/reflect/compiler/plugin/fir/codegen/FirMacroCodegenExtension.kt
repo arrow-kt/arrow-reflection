@@ -26,12 +26,12 @@ class FirMacroCodegenExtension(
 
   class MacroGeneratedFunctionKey : GeneratedDeclarationKey()
 
-  private val classFunctionTransformations2: MutableMap<Name, MutableList<TransformClassState.Function>> = mutableMapOf()
+  private val classFunctionStates: MutableMap<Name, MutableList<TransformClassState.Function>> = mutableMapOf()
 
   @OptIn(FirImplementationDetail::class)
   override fun generateFunctions(callableId: CallableId, context: MemberGenerationContext?): List<FirNamedFunctionSymbol> {
     val owner = context?.owner ?: return emptyList()
-    val states = classFunctionTransformations2[callableId.callableName] ?: return emptyList()
+    val states = classFunctionStates[callableId.callableName] ?: return emptyList()
     return states.map { function ->
       val key = MacroGeneratedFunctionKey()
       macro.classTransformation()[key] = function
@@ -71,7 +71,7 @@ class FirMacroCodegenExtension(
     val functionStates = compilation.flatMap { it.states() }.filterIsInstance<TransformClassState.Function>()
     functionStates.forEach { functionState ->
       val functionName = functionState.firSimpleFunction.name
-      classFunctionTransformations2.getOrPut(functionName) { mutableListOf() }.add(functionState)
+      classFunctionStates.getOrPut(functionName) { mutableListOf() }.add(functionState)
     }
     return functionStates.map { it.firSimpleFunction.name }.toSet()
   }

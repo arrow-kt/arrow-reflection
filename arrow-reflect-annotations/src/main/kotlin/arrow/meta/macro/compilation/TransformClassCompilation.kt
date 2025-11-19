@@ -12,10 +12,6 @@ data class TransformClassContext(
   private val scope: List<FirDeclaration>
 ) {
 
-  fun Kotlin(code: () -> String): Kotlin {
-    return Kotlin(session = session, scope = scope, code = code)
-  }
-
   fun Kotlin(scope: FirClass, code: () -> String): Kotlin {
     return Kotlin(session = session, scope = listOf(scope), code = code)
   }
@@ -33,8 +29,8 @@ class TransformClassFactory(
 
   private val states: MutableList<TransformClassState> = mutableListOf()
 
-  fun function(build: TransformClassContext.() -> Kotlin) {
-    val code = context.build()
+  fun function(build: TransformClassContext.() -> String) {
+    val code = context.Kotlin(scope = firClass) { context.build().trimIndent() }
     val function = code.firstIsInstanceOrNull<FirSimpleFunction>() ?: return
     states.add(
       TransformClassState.Function(

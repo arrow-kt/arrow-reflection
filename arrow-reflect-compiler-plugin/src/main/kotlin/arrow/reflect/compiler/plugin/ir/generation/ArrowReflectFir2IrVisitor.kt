@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.backend.*
 import org.jetbrains.kotlin.fir.backend.jvm.FirJvmVisibilityConverter
 import org.jetbrains.kotlin.fir.backend.jvm.JvmFir2IrExtensions
-import org.jetbrains.kotlin.fir.declarations.FirClass
 import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmIrMangler
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
@@ -26,10 +25,6 @@ class ArrowReflectFir2IrVisitor private constructor(
 
   fun <T : IrDeclarationParent, R> withParent(parent: T, f: T.() -> R): R {
     return conversionScope.withParent(parent, f)
-  }
-
-  fun containingClass(containingFirClass: FirClass, f: () -> Unit) {
-    conversionScope.withContainingFirClass(containingFirClass, f)
   }
 
   companion object {
@@ -67,7 +62,6 @@ class ArrowReflectFir2IrVisitor private constructor(
         SymbolRemapper.EMPTY
       )
       val field = componentsStorage::class.java.getDeclaredField("conversionScope")
-      field.isAccessible = true
       return Triple(componentsStorage.fir2IrVisitor, storage, field.getSafe(componentsStorage) as Fir2IrConversionScope)
     }
   }

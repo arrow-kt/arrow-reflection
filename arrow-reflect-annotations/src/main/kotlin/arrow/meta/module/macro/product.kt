@@ -7,16 +7,15 @@ import arrow.meta.samples.Product
 import org.jetbrains.kotlin.fir.declarations.FirClass
 
 @Macro(target = Product::class)
-fun MacroContext.product(clazz: FirClass): MacroCompilation {
-  return clazz.transform {
+fun MacroContext.product(firClass: FirClass): MacroCompilation {
+  return firClass.transform {
     function {
       //language=kotlin
-      val code = """
+      """
         fun product(): List<Pair<String, *>> {               
             return listOf(${propertiesOf(session, firClass) { """"${+it.name}" to this.${+it.name}""" }})
         }
-      """.trimIndent()
-      Kotlin(scope = clazz) { code }
+      """
     }
   }
 }

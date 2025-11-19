@@ -10,12 +10,10 @@ import org.jetbrains.kotlin.fir.declarations.FirClass
 fun MacroContext.hello(firClass: FirClass): MacroCompilation {
   return firClass.transform {
     function {
-      Kotlin {
-        //language=kotlin
-        """
-          fun hello(): String = "Hello"
-        """.trimIndent()
-      }
+      //language=kotlin
+      """
+        fun hello(): String = "Hello"
+      """
     }
   }
 }
@@ -24,12 +22,10 @@ fun MacroContext.hello(firClass: FirClass): MacroCompilation {
 fun MacroContext.world(firClass: FirClass): MacroCompilation {
   return firClass.transform {
     function {
-      Kotlin {
-        //language=kotlin
-        """
-          fun world(): String = "World!"
-        """.trimIndent()
-      }
+      //language=kotlin
+      """
+        fun world(): String = "World!"
+      """
     }
   }
 }
