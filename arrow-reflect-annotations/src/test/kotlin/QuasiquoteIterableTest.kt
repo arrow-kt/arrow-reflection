@@ -89,7 +89,7 @@ class QuasiquoteIterableTest {
   }
 
   private fun iterable(code: String, isExpression: Boolean): QuasiquoteIterable {
-    val file = FirKotlinCodeTransformer.transform(session = session(), code = code, isExpression = isExpression)
+    val file = FirKotlinCodeTransformer.transform(session = session(), code = code, isExpression = isExpression, runResolution = false, scope = listOf())
     return QuasiquoteIterable(file)
   }
 

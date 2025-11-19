@@ -1,0 +1,26 @@
+FILE: module_main_hello_class_test.kt
+    package foo.bar
+
+    @R|arrow/meta/samples/HelloClassTransform|() public final class Hello : R|kotlin/Any| {
+        public constructor(): R|foo/bar/Hello| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final fun hello(): R|kotlin/String|
+
+        public final fun world(): R|kotlin/String|
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval hello: R|foo/bar/Hello| = R|foo/bar/Hello.Hello|()
+        lval x: R|kotlin/String| = <strcat>(R|<local>/hello|.R|foo/bar/Hello.hello|(), String( ), R|<local>/hello|.R|foo/bar/Hello.world|())
+        ^box when () {
+            ==(R|<local>/x|, String(Hello World!)) ->  {
+                String(OK)
+            }
+            else ->  {
+                String(Fail)
+            }
+        }
+
+    }

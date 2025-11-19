@@ -1,6 +1,6 @@
 // WITH_STDLIB
 // MODULE: main
-package test
+package foo.bar
 
 import arrow.meta.samples.Product
 

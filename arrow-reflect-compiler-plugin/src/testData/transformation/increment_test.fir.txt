@@ -1,0 +1,15 @@
+FILE: module_main_increment_test.kt
+    package foo.bar
+
+    public final fun box(): R|kotlin/String| {
+        lval x: R|kotlin/Int| = Int(0).R|kotlin/Int.plus|(Int(1))
+        ^box when () {
+            ==(R|<local>/x|, Int(1)) ->  {
+                String(OK)
+            }
+            else ->  {
+                String(Fail)
+            }
+        }
+
+    }

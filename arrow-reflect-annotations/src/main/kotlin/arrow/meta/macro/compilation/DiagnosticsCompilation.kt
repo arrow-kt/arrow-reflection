@@ -23,8 +23,8 @@ interface DiagnosticsCompilation : MacroCompilation {
 fun diagnosticError(): DiagnosticFactory1DelegateProvider<String> = error1<KtElement, String>()
 fun diagnosticWarning(): DiagnosticFactory1DelegateProvider<String> = warning1<KtElement, String>()
 
-data class DiagnosticsContext(
-  val session: FirSession,
+open class DiagnosticsContext(
+  open val session: FirSession,
   private val diagnosticReporter: DiagnosticReporter,
   private val checkerContext: CheckerContext
 ) {
@@ -37,9 +37,4 @@ data class DiagnosticsContext(
       checkerContext
     )
   }
-
-  operator fun FirElement.unaryPlus(): String =
-    (this as? FirTypeRef)?.coneType?.renderReadableWithFqNames()?.replace("/", ".")
-      ?: source?.text?.toString()
-      ?: error("$this has no source psi text element")
 }

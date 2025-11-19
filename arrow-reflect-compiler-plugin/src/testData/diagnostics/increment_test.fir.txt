@@ -1,0 +1,6 @@
+FILE: increment_test.kt
+    package foo.bar
+
+    public final fun foo(): R|kotlin/Unit| {
+        lval x: R|kotlin/String| = @R|arrow/meta/samples/Increment|() String(0)
+    }

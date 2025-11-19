@@ -28,18 +28,6 @@ public class BoxTestGenerated extends AbstractBoxTest {
   }
 
   @Test
-  @TestMetadata("product_test.kt")
-  public void testProduct_test() {
-    runTest("src/testData/box/product_test.kt");
-  }
-
-  @Test
-  @TestMetadata("product_test_expected.kt")
-  public void testProduct_test_expected() {
-    runTest("src/testData/box/product_test_expected.kt");
-  }
-
-  @Test
   @TestMetadata("sample_test.kt")
   public void testSample_test() {
     runTest("src/testData/box/sample_test.kt");
