@@ -10,8 +10,22 @@ import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.properties
 
+context(visitor: ArrowReflectFir2IrVisitor)
+fun FirSimpleFunction.toIr(
+  original: IrSimpleFunction,
+  firParent: FirRegularClass
+): IrSimpleFunction {
+  val parent = original.parent as? IrClass ?: return original
+  return visitor.resolveIrSimpleFunction(
+    function = this,
+    symbol = original.symbol,
+    parent = parent,
+    firParent = firParent
+  )
+}
+
 @OptIn(DirectDeclarationsAccess::class, UnsafeDuringIrConstructionAPI::class)
-fun ArrowReflectFir2IrVisitor.createIrFrom(
+private fun ArrowReflectFir2IrVisitor.resolveIrSimpleFunction(
   function: FirSimpleFunction,
   symbol: IrSimpleFunctionSymbol,
   parent: IrClass,
@@ -26,7 +40,7 @@ fun ArrowReflectFir2IrVisitor.createIrFrom(
     }?.let { property ->
       storage.propertyCache[property] = irProperty.symbol
     }
-    storage.getterForPropertyCache[irProperty.symbol] = irProperty.getter!!.symbol
+    irProperty.getter?.let { getter -> storage.getterForPropertyCache[irProperty.symbol] = getter.symbol }
   }
   return withParent(parent) {
     visitor.visitSimpleFunction(simpleFunction = function, null) as IrSimpleFunction

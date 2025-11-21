@@ -2,6 +2,7 @@ package arrow.reflect.compiler.plugin.fir.codegen
 
 import arrow.meta.TemplateCompiler
 import arrow.meta.module.impl.arrow.meta.macro.compilation.*
+import arrow.meta.module.impl.arrow.meta.macro.compilation.transformclassfactory.TransformClassState
 import arrow.reflect.compiler.plugin.targets.macro.MacroInvoke
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.config.CompilerConfiguration

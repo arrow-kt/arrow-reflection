@@ -2,7 +2,7 @@ package arrow.reflect.compiler.plugin.targets.macro
 
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroCompilation
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroContext
-import arrow.meta.module.impl.arrow.meta.macro.compilation.TransformClassState
+import arrow.meta.module.impl.arrow.meta.macro.compilation.transformclassfactory.TransformClassState
 import arrow.reflect.compiler.plugin.ir.generation.ArrowReflectFir2IrVisitor
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.fir.FirElement
