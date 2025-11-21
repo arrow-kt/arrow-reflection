@@ -29,12 +29,17 @@ open class DiagnosticsContext(
   private val checkerContext: CheckerContext
 ) {
 
-  fun FirElement.report(factory: KtDiagnosticFactory1<String>, msg: String) {
+  fun report(element: FirElement, factory: KtDiagnosticFactory1<String>, msg: String) {
     diagnosticReporter.reportOn(
-      source,
+      element.source,
       factory,
       msg,
       checkerContext
     )
   }
+}
+
+context(context: DiagnosticsContext)
+fun FirElement.report(factory: KtDiagnosticFactory1<String>, msg: String) {
+  context.report(element = this, factory = factory, msg = msg)
 }

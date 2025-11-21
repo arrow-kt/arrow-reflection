@@ -1,8 +1,9 @@
 package arrow.reflect.compiler.plugin.ir
 
-import arrow.meta.module.impl.arrow.meta.macro.compilation.TransformClassState
+import arrow.meta.module.impl.arrow.meta.macro.compilation.transformclassfactory.TransformClassState
 import arrow.reflect.compiler.plugin.fir.codegen.FirMacroCodegenExtension
-import arrow.reflect.compiler.plugin.ir.generation.createIrFrom
+import arrow.reflect.compiler.plugin.ir.generation.ArrowReflectFir2IrVisitor
+import arrow.reflect.compiler.plugin.ir.generation.toIr
 import arrow.reflect.compiler.plugin.targets.macro.MacroInvoke
 import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
 import org.jetbrains.kotlin.fir.declarations.FirRegularClass
@@ -29,13 +30,17 @@ class MacroIrFunctionTransformer(
     val origin = declaration.origin as? IrDeclarationOrigin.GeneratedByPlugin ?: return
     val key = origin.pluginKey as? FirMacroCodegenExtension.MacroGeneratedFunctionKey ?: return
     val transformation = macro.classTransformation()[key] as? TransformClassState.Function ?: return
-    val irVisitor = macro.irActualizedResult() ?: return
-    val irFunctionTransformed = irVisitor.createIrFrom(
-      function = transformation.firSimpleFunction,
-      symbol = declaration.symbol,
-      parent = declaration.parent as IrClass,
-      firParent = transformation.firClass as FirRegularClass
+    macro.irActualizedResult()?.run {
+      transformation.resolveFunctionBody(original = declaration)
+    }
+  }
+
+  context(_: ArrowReflectFir2IrVisitor)
+  private fun TransformClassState.Function.resolveFunctionBody(original: IrSimpleFunction) {
+    val function = firSimpleFunction.toIr(
+      original = original,
+      firParent = context as FirRegularClass
     )
-    declaration.body = irFunctionTransformed.body
+    original.body = function.body
   }
 }
