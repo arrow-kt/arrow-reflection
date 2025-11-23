@@ -1,0 +1,27 @@
+FILE: module_main_property_test.kt
+    package foo.bar
+
+    @R|arrow/meta/samples/Property|() public final class Sample : R|kotlin/Any| {
+        public constructor(): R|foo/bar/Sample| {
+            super<R|kotlin/Any|>()
+        }
+
+        public final val x: R|kotlin/Int|
+            public get(): R|kotlin/Int|
+
+        public final val y: R|kotlin/Int|
+            public get(): R|kotlin/Int|
+
+    }
+    public final fun box(): R|kotlin/String| {
+        lval sample: R|foo/bar/Sample| = R|foo/bar/Sample.Sample|()
+        ^box when () {
+            ==(R|<local>/sample|.R|foo/bar/Sample.x|.R|kotlin/Int.plus|(R|<local>/sample|.R|foo/bar/Sample.y|), Int(5)) ->  {
+                String(OK)
+            }
+            else ->  {
+                String(Fail)
+            }
+        }
+
+    }

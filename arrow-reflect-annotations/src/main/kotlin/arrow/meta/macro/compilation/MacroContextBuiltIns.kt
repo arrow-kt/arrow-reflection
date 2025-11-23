@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
 import org.jetbrains.kotlin.fir.declarations.FirClass
 import org.jetbrains.kotlin.fir.declarations.FirDeclaration
+import org.jetbrains.kotlin.fir.declarations.FirProperty
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.declarations.FirValueParameter
 import org.jetbrains.kotlin.fir.declarations.impl.FirPrimaryConstructor
@@ -47,5 +48,10 @@ operator fun FirElement.unaryPlus(): String =
 
 context(_: MacroContext)
 fun String.function(session: FirSession, scope: List<FirDeclaration>): FirSimpleFunction? {
+  return Kotlin(session = session, scope = scope, code = { this }).firstIsInstanceOrNull()
+}
+
+context(_: MacroContext)
+fun String.property(session: FirSession, scope: List<FirDeclaration>): FirProperty? {
   return Kotlin(session = session, scope = scope, code = { this }).firstIsInstanceOrNull()
 }

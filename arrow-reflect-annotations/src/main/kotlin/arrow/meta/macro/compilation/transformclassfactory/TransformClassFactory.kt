@@ -2,6 +2,7 @@ package arrow.meta.module.impl.arrow.meta.macro.compilation.transformclassfactor
 
 import arrow.meta.module.impl.arrow.meta.macro.compilation.TransformClassContext
 import org.jetbrains.kotlin.fir.declarations.FirClass
+import org.jetbrains.kotlin.fir.declarations.FirProperty
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 
 class TransformClassFactory(
@@ -21,6 +22,16 @@ class TransformClassFactory(
     )
   }
 
+  fun FirProperty?.create() {
+    if (this == null) return
+    states.add(
+      TransformClassState.Property(
+        context = firClass,
+        firProperty = this
+      )
+    )
+  }
+
   fun states(): List<TransformClassState> = states
 }
 
@@ -29,5 +40,10 @@ sealed interface TransformClassState {
   data class Function(
     val context: FirClass,
     val firSimpleFunction: FirSimpleFunction
+  ) : TransformClassState
+
+  data class Property(
+    val context: FirClass,
+    val firProperty: FirProperty
   ) : TransformClassState
 }

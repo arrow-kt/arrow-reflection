@@ -5,14 +5,13 @@ import arrow.reflect.compiler.plugin.fir.codegen.FirMacroCodegenExtension
 import arrow.reflect.compiler.plugin.ir.generation.ArrowReflectFir2IrVisitor
 import arrow.reflect.compiler.plugin.ir.generation.toIr
 import arrow.reflect.compiler.plugin.targets.macro.MacroInvoke
-import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
 import org.jetbrains.kotlin.fir.declarations.FirRegularClass
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.visitors.IrVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 
-class MacroIrFunctionTransformer(
+class MacroIrTransformer(
   private val macro: MacroInvoke
 ) : IrVisitorVoid() {
 
@@ -25,7 +24,15 @@ class MacroIrFunctionTransformer(
     }
   }
 
-  @OptIn(DirectDeclarationsAccess::class)
+  override fun visitProperty(declaration: IrProperty) {
+    val origin = declaration.origin as? IrDeclarationOrigin.GeneratedByPlugin ?: return
+    val key = origin.pluginKey as? FirMacroCodegenExtension.MacroGeneratedPropertyKey ?: return
+    val transformation = macro.classTransformation()[key] as? TransformClassState.Property ?: return
+    macro.irActualizedResult()?.run {
+      transformation.resolveProperty(original = declaration)
+    }
+  }
+
   override fun visitSimpleFunction(declaration: IrSimpleFunction) {
     val origin = declaration.origin as? IrDeclarationOrigin.GeneratedByPlugin ?: return
     val key = origin.pluginKey as? FirMacroCodegenExtension.MacroGeneratedFunctionKey ?: return
@@ -42,5 +49,14 @@ class MacroIrFunctionTransformer(
       firParent = context as FirRegularClass
     )
     original.body = function.body
+  }
+
+  context(_: ArrowReflectFir2IrVisitor)
+  private fun TransformClassState.Property.resolveProperty(original: IrProperty) {
+    val property = firProperty.toIr(
+      original = original,
+      firParent = context as FirRegularClass
+    )
+    original.backingField?.initializer = property.backingField?.initializer
   }
 }

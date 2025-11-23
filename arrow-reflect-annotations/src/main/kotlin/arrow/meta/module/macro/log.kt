@@ -32,7 +32,6 @@ fun log(expression: FirExpression): MacroCompilation {
 }
 
 context(_: MacroContext, _: DiagnosticsContext)
-private fun FirElement.report(
-) {
+private fun FirElement.report() {
   report(META_LOG, "found error on expression: ${+this}")
 }
