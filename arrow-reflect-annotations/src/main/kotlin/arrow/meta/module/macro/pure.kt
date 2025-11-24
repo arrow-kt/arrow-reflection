@@ -4,6 +4,8 @@ import arrow.meta.module.impl.arrow.meta.macro.Macro
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroCompilation
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroContext
 import arrow.meta.module.impl.arrow.meta.macro.compilation.diagnosticError
+import arrow.meta.module.impl.arrow.meta.macro.compilation.diagnostics
+import arrow.meta.module.impl.arrow.meta.macro.compilation.report
 import arrow.meta.samples.Pure
 import arrow.meta.samples.pure.createCallGraph
 import arrow.meta.samples.pure.render
@@ -20,7 +22,8 @@ private val restrictedNameSpaces = setOf(
 )
 
 @Macro(target = Pure::class)
-fun MacroContext.pure(function: FirSimpleFunction): MacroCompilation {
+context(_: MacroContext)
+fun pure(function: FirSimpleFunction): MacroCompilation {
   return diagnostics {
     val callGraph = createCallGraph(null, function)
     val unsafeCallsInGraph = callGraph.unsafeCalls(restrictedNameSpaces)

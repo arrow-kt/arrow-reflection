@@ -45,10 +45,6 @@ class FirMacroTransformer(
     return result ?: element
   }
 
-  override fun transformClass(klass: FirClass, data: FirDeclaration): FirStatement {
-    return super.transformClass(klass, data)
-  }
-
   override fun <E : FirElement> transformElement(element: E, data: FirDeclaration): E {
     element.transformChildren(this, data)
     return invokeMacro(element = element, scope = data)

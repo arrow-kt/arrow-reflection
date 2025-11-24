@@ -38,4 +38,10 @@ public class TransformationTestGenerated extends AbstractTransformationTest {
   public void testProduct_test() {
     runTest("src/testData/transformation/product_test.kt");
   }
+
+  @Test
+  @TestMetadata("property_test.kt")
+  public void testProperty_test() {
+    runTest("src/testData/transformation/property_test.kt");
+  }
 }

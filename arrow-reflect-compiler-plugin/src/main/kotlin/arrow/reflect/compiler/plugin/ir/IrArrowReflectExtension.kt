@@ -11,6 +11,6 @@ class IrArrowReflectExtension(
 ) : IrGenerationExtension {
 
   override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-    moduleFragment.acceptChildrenVoid(MacroIrFunctionTransformer(macro = macro))
+    moduleFragment.acceptChildrenVoid(MacroIrTransformer(macro = macro))
   }
 }

@@ -4,6 +4,10 @@ import arrow.meta.module.impl.arrow.meta.macro.Macro
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroCompilation
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroContext
 import arrow.meta.module.impl.arrow.meta.macro.compilation.diagnosticError
+import arrow.meta.module.impl.arrow.meta.macro.compilation.diagnostics
+import arrow.meta.module.impl.arrow.meta.macro.compilation.report
+import arrow.meta.module.impl.arrow.meta.macro.compilation.transform
+import arrow.meta.module.impl.arrow.meta.macro.compilation.unaryPlus
 import arrow.meta.samples.Increment
 import org.jetbrains.kotlin.fir.expressions.FirCall
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
@@ -13,7 +17,8 @@ private val IncrementNotInConstantExpression by diagnosticError()
 private val IncrementNotInConstantInt by diagnosticError()
 
 @Macro(target = Increment::class)
-fun MacroContext.incrementChecker(statement: FirStatement): MacroCompilation {
+context(_: MacroContext)
+fun incrementChecker(statement: FirStatement): MacroCompilation {
   return diagnostics {
     when {
       statement !is FirLiteralExpression -> {
@@ -33,7 +38,8 @@ fun MacroContext.incrementChecker(statement: FirStatement): MacroCompilation {
 }
 
 @Macro(target = Increment::class)
-fun MacroContext.incrementTransformation(statement: FirStatement): MacroCompilation {
+context(_: MacroContext)
+fun incrementTransformation(statement: FirStatement): MacroCompilation {
   return transform {
     val exp = Kotlin { "${+statement} + 1" }
     exp.firstOrNull { it is FirCall } ?: statement

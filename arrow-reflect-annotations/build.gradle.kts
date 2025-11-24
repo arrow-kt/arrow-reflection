@@ -1,3 +1,6 @@
+import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
   alias(libs.plugins.kotlin.jvm)
   //  alias(libs.plugins.arrowGradleConfig.kotlin)
@@ -55,6 +58,12 @@ dependencies {
   testImplementation("junit:junit:4.13.2")
   testImplementation(platform("org.junit:junit-bom:5.13.4"))
   testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+  compilerOptions {
+    freeCompilerArgs.add("-Xcontext-parameters")
+  }
 }
 
 tasks.test {

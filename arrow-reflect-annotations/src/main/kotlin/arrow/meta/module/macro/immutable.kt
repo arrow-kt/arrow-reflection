@@ -5,6 +5,8 @@ import arrow.meta.module.impl.arrow.meta.macro.compilation.DiagnosticsContext
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroCompilation
 import arrow.meta.module.impl.arrow.meta.macro.compilation.MacroContext
 import arrow.meta.module.impl.arrow.meta.macro.compilation.diagnosticError
+import arrow.meta.module.impl.arrow.meta.macro.compilation.diagnostics
+import arrow.meta.module.impl.arrow.meta.macro.compilation.report
 import arrow.meta.samples.Immutable
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.declarations.FirDeclaration
@@ -24,42 +26,45 @@ private val FoundMutableKProperty by diagnosticError()
 private val FoundMutableIterable by diagnosticError()
 
 @Macro(target = Immutable::class)
-fun MacroContext.immutable(declaration: FirDeclaration): MacroCompilation {
+context(_: MacroContext)
+fun immutable(declaration: FirDeclaration): MacroCompilation {
   return diagnostics {
     declaration.accept(object : FirVisitorVoid() {
       override fun visitElement(element: FirElement) {
         element.acceptChildren(this)
       }
       override fun visitProperty(property: FirProperty) {
-        propertyCheck(property = property)
+        property.check()
         visitElement(property)
       }
 
       override fun visitFunctionCall(functionCall: FirFunctionCall) {
-        functionCallCheck(functionCall = functionCall)
+        functionCall.check()
         super.visitFunctionCall(functionCall)
       }
     })
   }
 }
 
-private fun DiagnosticsContext.propertyCheck(property: FirProperty) {
-  if (property.isVar) {
-    property.report(FoundMutableVar, "mutable vars are forbidden in `${Immutable::class.java.simpleName}` container")
+context(_: DiagnosticsContext)
+private fun FirProperty.check() {
+  if (isVar) {
+    report(FoundMutableVar, "mutable vars are forbidden in `${Immutable::class.java.simpleName}` container")
   }
 }
 
-private fun DiagnosticsContext.functionCallCheck(functionCall: FirFunctionCall) {
-  val resolvedType = functionCall.toResolvedCallableSymbol()?.resolvedReturnType
+context(context: DiagnosticsContext)
+private fun FirFunctionCall.check() {
+  val resolvedType = toResolvedCallableSymbol()?.resolvedReturnType
   if (resolvedType != null) {
-    if (isMutableKProperty(resolvedType)) {
-      functionCall.report(
+    if (context.isMutableKProperty(resolvedType)) {
+      report(
         FoundMutableKProperty,
         "mutable KProperties are forbidden in `${Immutable::class.java.simpleName}` container"
       )
     }
-    if (extends(typeOf<MutableIterable<*>>(), resolvedType)) {
-      functionCall.report(
+    if (context.extends(typeOf<MutableIterable<*>>(), resolvedType)) {
+      report(
         FoundMutableIterable,
         "mutable iterables are forbidden in `${Immutable::class.java.simpleName}` container"
       )

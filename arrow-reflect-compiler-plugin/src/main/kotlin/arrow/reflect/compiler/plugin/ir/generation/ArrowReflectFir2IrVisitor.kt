@@ -11,11 +11,18 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.backend.*
 import org.jetbrains.kotlin.fir.backend.jvm.FirJvmVisibilityConverter
 import org.jetbrains.kotlin.fir.backend.jvm.JvmFir2IrExtensions
+import org.jetbrains.kotlin.fir.declarations.FirProperty
+import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.ir.backend.jvm.serialization.JvmIrMangler
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.SymbolRemapper
+import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.utils.getSafe
+import kotlin.sequences.forEach
 
 class ArrowReflectFir2IrVisitor private constructor(
   val visitor: Fir2IrVisitor,
@@ -67,4 +74,31 @@ class ArrowReflectFir2IrVisitor private constructor(
   }
 }
 
+@OptIn(UnsafeDuringIrConstructionAPI::class)
+context(visitor: ArrowReflectFir2IrVisitor)
+fun IrClass.cacheFunctions(
+  firFunctions: List<FirSimpleFunction>
+) {
+  functions.forEach { irFunction ->
+    firFunctions.firstOrNull {
+      it.name.identifier == irFunction.name.identifier
+    }?.let { function ->
+      visitor.storage.functionCache[function] = irFunction.symbol
+    }
+  }
+}
 
+@OptIn(UnsafeDuringIrConstructionAPI::class)
+context(visitor: ArrowReflectFir2IrVisitor)
+fun IrClass.cacheProperties(
+  firProperties: List<FirProperty>
+) {
+  properties.forEach { irProperty ->
+    firProperties.firstOrNull {
+      it.name.identifier == irProperty.name.identifier
+    }?.let { property ->
+      visitor.storage.propertyCache[property] = irProperty.symbol
+    }
+    irProperty.getter?.let { getter -> visitor.storage.getterForPropertyCache[irProperty.symbol] = getter.symbol }
+  }
+}
