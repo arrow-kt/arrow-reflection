@@ -30,11 +30,11 @@ jobs:
           java-version: '17'
 
       - name: Build
-        uses: gradle/gradle-build-action@v2.3.3
+        uses: gradle/gradle-build-action@v3.5.0
         with:
           arguments: generateTests --stacktrace
 
       - name: Build
-        uses: gradle/gradle-build-action@v2.3.3
+        uses: gradle/gradle-build-action@v3.5.0
         with:
           arguments: build --stacktrace
