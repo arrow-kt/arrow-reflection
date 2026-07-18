@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlinVersion = "1.8.255-SNAPSHOT"
+val kotlinVersion = "1.9.25"
 
 plugins {
-  id("org.jetbrains.kotlin.jvm") version "1.8.255-SNAPSHOT"
+  id("org.jetbrains.kotlin.jvm") version "1.9.25"
   id("io.arrow-kt.reflect") version "0.1.0"
   application
 }
